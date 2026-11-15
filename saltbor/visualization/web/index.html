@@ -1831,12 +1831,72 @@
                             <!-- 7 Sub-tabs of the Scenario Observatory -->
                             <div class="scientific-subtabs-nav" style="display:flex; gap:6px; margin-bottom:14px; border-bottom:1px solid var(--border-subtle); padding-bottom:8px; flex-wrap:wrap;">
                                 <button class="btn btn-xs btn-primary te-scenario-tab-btn active" data-target="te-view-timeline">🔗 Línea Temporal Causal</button>
-                                <button class="btn btn-xs btn-secondary te-scenario-tab-btn" data-target="te-view-builder">🏗️ Creador de Escenarios</button>
+                                <button class="btn btn-xs btn-secondary te-scenario-tab-btn" data-target="te-view-ai-lab">🤖 SALTBOR AI Scenario Lab</button>
+                                <button class="btn btn-xs btn-secondary te-scenario-tab-btn" data-target="te-view-builder">🏗️ Creador Manual</button>
                                 <button class="btn btn-xs btn-secondary te-scenario-tab-btn" data-target="te-view-compare">📊 Comparación Contrafactual</button>
                                 <button class="btn btn-xs btn-secondary te-scenario-tab-btn" data-target="te-view-ledger">⚖️ Libro Diario Contable</button>
                                 <button class="btn btn-xs btn-secondary te-scenario-tab-btn" data-target="te-view-inspector">👤 Inspector de Entidades</button>
                                 <button class="btn btn-xs btn-secondary te-scenario-tab-btn" data-target="te-view-population">👥 Análisis Poblacional</button>
                                 <button class="btn btn-xs btn-secondary te-scenario-tab-btn" data-target="te-view-provenance">📜 Evidencia & Procedencia</button>
+                            </div>
+
+                            <!-- View AI: SALTBOR AI Scenario Lab -->
+                            <div id="te-view-ai-lab" class="te-scenario-view-content" style="display:none;">
+                                <div style="background:var(--bg-surface); padding:18px; border-radius:8px; border:1px solid var(--border-subtle); display:flex; flex-direction:column; gap:16px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-subtle); padding-bottom:10px;">
+                                        <div>
+                                            <h4 style="margin:0; font-size:16px; color:var(--text-main);">🤖 SALTBOR AI Scenario Lab — Traducción Universal & Orquestación Autónoma</h4>
+                                            <p style="margin:4px 0 0 0; font-size:12px; color:var(--text-muted);">Describe una contingencia en lenguaje natural para cualquier cantón salvadoreño sin programar clases Python.</p>
+                                        </div>
+                                        <div id="ai-provider-badge" style="background:var(--bg-subtle); padding:4px 10px; border-radius:4px; font-size:11px; font-weight:600; border:1px solid var(--border-strong);">
+                                            ⚡ Backend: OFFLINE DETERMINISTIC (Activo)
+                                        </div>
+                                    </div>
+
+                                    <!-- Territorial Selector & Natural Language Input -->
+                                    <div style="display:grid; grid-template-columns:1fr 2fr; gap:14px;">
+                                        <div style="display:flex; flex-direction:column; gap:8px;">
+                                            <label style="font-size:12px; font-weight:600;">📍 Selección Territorial (262 Distritos / Cantones D.L. 762):</label>
+                                            <select id="ai-select-territory" class="form-control" style="font-size:13px;">
+                                                <option value="Cantón El Rosario">Cantón El Rosario (Chalatenango Centro)</option>
+                                                <option value="Cantón San Gerardo">Cantón San Gerardo (San Miguel Norte)</option>
+                                                <option value="Cantón Arcatao">Cantón Arcatao (Chalatenango Norte)</option>
+                                                <option value="Cantón Dulce Nombre de María">Cantón Dulce Nombre de María</option>
+                                                <option value="Cantón San José Las Flores">Cantón San José Las Flores</option>
+                                                <option value="Distrito San Salvador Centro">Distrito San Salvador Centro</option>
+                                            </select>
+                                            <div id="ai-coverage-info" style="font-size:11px; color:var(--text-muted); background:var(--bg-subtle); padding:8px; border-radius:6px; border:1px solid var(--border-subtle);">
+                                                Calidad de datos: <strong>0.70</strong> | Censo Poblacional: <strong>Sí</strong> | Clínica: <strong>Cabecera Distrital</strong>
+                                            </div>
+                                            <button id="ai-btn-plan-suggestions" class="btn btn-xs btn-outline-secondary">💡 Sugerir Políticas Alternativas</button>
+                                        </div>
+
+                                        <div style="display:flex; flex-direction:column; gap:8px;">
+                                            <label style="font-size:12px; font-weight:600;">📝 Descripción de la Contingencia en Lenguaje Natural:</label>
+                                            <textarea id="ai-scenario-prompt" class="form-control" rows="3" style="font-size:13px; font-family:inherit; resize:vertical;" placeholder="Ej: Simula qué sucedería si un deslave bloquea durante 15 días el principal camino de acceso a este cantón. Quiero observar cómo afecta a estudiantes, agricultores y tienditas.">Simula qué sucedería si un deslave bloquea durante 15 días el principal camino de acceso a este cantón rural. Quiero observar el impacto en los precios de los alimentos, la asistencia escolar y la liquidez de los hogares.</textarea>
+                                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                <span style="font-size:11px; color:var(--text-muted);">Sin código ad-hoc • Conservación estricta de doble partida</span>
+                                                <button id="ai-btn-compile-and-run" class="btn btn-sm btn-primary">⚡ Interpretar, Validar y Ejecutar con IA</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- AI Interpretation & Execution Results Container -->
+                                    <div id="ai-execution-results-container" style="display:none; background:var(--bg-subtle); padding:14px; border-radius:8px; border:1px solid var(--border-strong);">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                            <h5 style="margin:0; font-size:14px; color:var(--text-main);">📊 Resultado de la Orquestación Autónoma</h5>
+                                            <span id="ai-task-status-pill" style="font-size:11px; padding:2px 8px; border-radius:10px; background:var(--color-success); color:#fff; font-weight:600;">COMPLETED</span>
+                                        </div>
+                                        <div id="ai-interpretation-text" style="font-size:13px; margin-bottom:12px; line-height:1.5;"></div>
+                                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:12px;">
+                                            <div style="background:var(--bg-surface); padding:8px; border-radius:6px; font-size:12px;"><strong>Contabilidad:</strong> <span id="ai-metric-ledger">Balanceada ($0.00 diff)</span></div>
+                                            <div style="background:var(--bg-surface); padding:8px; border-radius:6px; font-size:12px;"><strong>Asistencia Escolar:</strong> <span id="ai-metric-edu">--</span></div>
+                                            <div style="background:var(--bg-surface); padding:8px; border-radius:6px; font-size:12px;"><strong>Espera en Clínica:</strong> <span id="ai-metric-health">--</span></div>
+                                            <div style="background:var(--bg-surface); padding:8px; border-radius:6px; font-size:12px;"><strong>Cartera Fiado:</strong> <span id="ai-metric-fiado">--</span></div>
+                                        </div>
+                                        <div id="ai-scientific-disclaimer" style="font-size:11px; color:var(--text-muted); font-style:italic;"></div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- View 1: Causal Timeline -->

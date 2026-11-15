@@ -6021,3 +6021,276 @@ def get_territorial_provenance_catalog_endpoint() -> dict[str, Any]:
 
 
 
+
+
+# ============================================================================
+# SALTBOR PHASE 1.15 — AI INTELLIGENCE LAYER REST ENDPOINTS
+# ============================================================================
+
+from saltbor.ai import (
+    AIComputeBudgetManager,
+    AICausalOrchestrationAssistant,
+    AIMemoryAndContext,
+    AIPrivacyGuard,
+    AISimulationExecutionController,
+    ExecutionState,
+    AIModelRouter,
+    NaturalLanguageScenarioBuilder,
+    ScenarioPlanningAssistant,
+    SimulationResultsAnalyst,
+    AIScenarioComparisonAssistant,
+    AIProviderType,
+)
+from saltbor.territory.territory_catalog import TerritoryCatalogService
+
+_ai_privacy = AIPrivacyGuard()
+_ai_router = AIModelRouter()
+_ai_budget = AIComputeBudgetManager()
+_ai_catalog = TerritoryCatalogService()
+_ai_builder = NaturalLanguageScenarioBuilder(router=_ai_router, budget_manager=_ai_budget, catalog=_ai_catalog)
+_ai_controller = AISimulationExecutionController()
+_ai_analyst = SimulationResultsAnalyst(router=_ai_router, budget_manager=_ai_budget)
+_ai_planner = ScenarioPlanningAssistant(router=_ai_router, budget_manager=_ai_budget)
+_ai_causal = AICausalOrchestrationAssistant()
+_ai_comparator = AIScenarioComparisonAssistant(router=_ai_router, budget_manager=_ai_budget)
+_ai_context = AIMemoryAndContext()
+
+
+class AIBYOKConfigureRequest(BaseModel):
+    gemini_api_key: str
+    enable_remote: bool = True
+
+
+class AINaturalLanguageBuildRequest(BaseModel):
+    prompt: str
+    territory_override: Optional[str] = None
+
+
+class AICausalValidationRequest(BaseModel):
+    cause: str
+    effect: str
+    proposed_delta: Optional[float] = None
+
+
+class AIPlanningRequest(BaseModel):
+    research_objective: str
+    territory_name: str = "Cantón El Rosario"
+
+
+class AIExecutionStartRequest(BaseModel):
+    scenario_id: str
+    seed: int = 42
+
+
+class AIResultsAnalyzeRequest(BaseModel):
+    scenario_id: str
+    seed: int = 42
+
+
+@router.get("/ai/providers/status")
+def get_ai_providers_status_endpoint() -> dict[str, Any]:
+    """Return live availability and operational health of all registered AI backends."""
+    gemini_key_masked = _ai_privacy.mask_api_key(_ai_router.gemini_provider._api_key)
+    return {
+        "providers": _ai_router.get_provider_status(),
+        "gemini_byok_configured": _ai_router.gemini_provider.is_available(),
+        "gemini_key_masked": gemini_key_masked,
+        "gemini_quota_exhausted": _ai_router.gemini_provider.quota_exhausted,
+        "allow_remote": _ai_router.allow_remote,
+        "budget": _ai_budget.get_summary_report(),
+    }
+
+
+@router.post("/ai/providers/byok")
+def configure_ai_byok_endpoint(req: AIBYOKConfigureRequest) -> dict[str, Any]:
+    """Configure or clear Gemini API key in volatile memory without disk persistence."""
+    key = req.gemini_api_key.strip()
+    if key.lower() in ["clear", "none", ""]:
+        _ai_router.gemini_provider.clear_byok_key()
+        _ai_router.allow_remote = False
+        return {
+            "status": "cleared",
+            "message": "Gemini API key purged from memory. Remote execution disabled.",
+            "byok_active": False,
+        }
+
+    _ai_router.gemini_provider.set_byok_key(key)
+    _ai_router.allow_remote = req.enable_remote
+    return {
+        "status": "configured",
+        "message": "Gemini API key configured in memory successfully.",
+        "byok_active": True,
+        "masked_key": _ai_privacy.mask_api_key(key),
+    }
+
+
+@router.get("/ai/territories/districts")
+def list_ai_districts_endpoint() -> list[dict[str, Any]]:
+    """Return all 262 official Salvadoran districts with known cantones."""
+    return _ai_catalog.list_all_districts()
+
+
+@router.get("/ai/territories/coverage")
+def get_territory_coverage_endpoint(territory: str = "Cantón El Rosario") -> dict[str, Any]:
+    """Evaluate administrative data coverage and report uncertainties for any territory."""
+    rep = _ai_catalog.evaluate_data_coverage(territory)
+    return {
+        "territory_id": rep.territory_id,
+        "name": rep.name,
+        "administrative_level": rep.administrative_level,
+        "department_code": rep.department_code,
+        "municipality_id": rep.municipality_id,
+        "data_quality_score": rep.data_quality_score,
+        "has_population_census": rep.has_population_census,
+        "has_commercial_nodes": rep.has_commercial_nodes,
+        "has_primary_clinic": rep.has_primary_clinic,
+        "has_public_school": rep.has_public_school,
+        "known_facilities_count": len(rep.known_facilities),
+        "known_facilities": rep.known_facilities,
+        "missing_variables": rep.missing_variables,
+        "uncertainties": rep.uncertainties,
+    }
+
+
+@router.post("/ai/scenarios/build_natural_language")
+def build_natural_language_scenario_endpoint(req: AINaturalLanguageBuildRequest) -> dict[str, Any]:
+    """Translate natural language instructions into a validated simulation scenario without custom code."""
+    res = _ai_builder.build_scenario_from_text(
+        prompt=req.prompt,
+        preferred_canton_override=req.territory_override,
+    )
+    # Register in execution controller
+    exec_record = _ai_controller.prepare_execution(res.scenario_definition)
+    return {
+        "task_id": exec_record.task_id,
+        "scenario_id": res.scenario_definition.scenario_id,
+        "name": res.scenario_definition.name,
+        "description": res.scenario_definition.description,
+        "department_code": res.scenario_definition.department_code,
+        "municipality_id": res.scenario_definition.municipality_id,
+        "community_id": res.scenario_definition.community_id,
+        "duration_ticks": res.scenario_definition.duration_ticks,
+        "shocks": res.scenario_definition.shocks,
+        "interventions": res.scenario_definition.interventions,
+        "coverage": {
+            "name": res.coverage_report.name,
+            "data_quality_score": res.coverage_report.data_quality_score,
+            "missing_variables": res.coverage_report.missing_variables,
+            "uncertainties": res.coverage_report.uncertainties,
+        },
+        "raw_interpretation": res.raw_interpretation,
+        "state": exec_record.state.value,
+        "is_ready_for_execution": res.is_ready_for_execution,
+    }
+
+
+@router.post("/ai/causal/validate")
+def validate_causal_mechanism_endpoint(req: AICausalValidationRequest) -> dict[str, Any]:
+    """Validate a cause-effect relationship against SALTBOR's scientific causal registry."""
+    return _ai_causal.validate_proposed_mechanism(req.cause, req.effect, req.proposed_delta)
+
+
+@router.post("/ai/planning/recommendations")
+def get_planning_recommendations_endpoint(req: AIPlanningRequest) -> dict[str, Any]:
+    """Generate structured policy alternatives and research design advice."""
+    return _ai_planner.generate_planning_recommendations(req.research_objective, req.territory_name)
+
+
+@router.post("/ai/execution/run")
+def run_ai_execution_task_endpoint(req: AIExecutionStartRequest) -> dict[str, Any]:
+    """Execute a prepared scenario under lifecycle control and double-entry auditing."""
+    # Find task or prepare on the fly
+    matching_tasks = [t for t in _ai_controller.records.values() if t.scenario_id == req.scenario_id]
+    if matching_tasks:
+        task_id = matching_tasks[-1].task_id
+    else:
+        # Fetch from generalized engine
+        scen_def = _ai_controller.engine.scenarios.get(req.scenario_id)
+        if not scen_def:
+            raise HTTPException(status_code=404, detail=f"Scenario {req.scenario_id} not found.")
+        record = _ai_controller.prepare_execution(scen_def, seed=req.seed)
+        task_id = record.task_id
+
+    updated_record = _ai_controller.run_execution(task_id)
+    if updated_record.state == ExecutionState.FAILED:
+        return {
+            "status": "failed",
+            "task_id": task_id,
+            "error": updated_record.error_message,
+            "audit_logs": updated_record.audit_logs,
+        }
+
+    res = updated_record.result
+    return {
+        "status": "completed",
+        "task_id": task_id,
+        "scenario_id": res.scenario_id,
+        "seed": res.seed,
+        "duration_ticks": res.duration_ticks,
+        "final_indicators": res.final_indicators,
+        "ledger_summary": res.ledger_summary,
+        "causal_trace_summary": res.causal_trace.get("metrics", {}),
+        "execution_time_seconds": res.execution_time_seconds,
+        "consistency_passed": res.consistency_passed,
+        "audit_logs": updated_record.audit_logs,
+    }
+
+
+@router.post("/ai/results/analyze")
+def analyze_ai_simulation_results_endpoint(req: AIResultsAnalyzeRequest) -> dict[str, Any]:
+    """Generate scientific, evidence-grounded interpretation of a scenario result."""
+    matching = [t for t in _ai_controller.records.values() if t.scenario_id == req.scenario_id and t.result is not None]
+    if matching:
+        res = matching[-1].result
+    else:
+        # Run quickly if not already present
+        res = _ai_controller.engine.execute_scenario(req.scenario_id, seed=req.seed)
+
+    interp = _ai_analyst.analyze_result(res)
+    return {
+        "scenario_id": interp.scenario_id,
+        "seed": interp.seed,
+        "executive_summary": interp.executive_summary,
+        "affected_households_summary": interp.affected_households_summary,
+        "commercial_liquidity_summary": interp.commercial_liquidity_summary,
+        "education_service_summary": interp.education_service_summary,
+        "healthcare_capacity_summary": interp.healthcare_capacity_summary,
+        "double_entry_ledger_audit": interp.double_entry_ledger_audit,
+        "activated_causal_chains": interp.activated_causal_chains,
+        "unexpected_or_delayed_effects": interp.unexpected_or_delayed_effects,
+        "scientific_disclaimer": interp.scientific_disclaimer,
+    }
+
+
+@router.get("/ai/scenarios/compare_counterfactual")
+def compare_ai_counterfactual_endpoint(
+    baseline_id: str = "SCEN_BASE_EQUILIBRIUM",
+    shock_id: str = "SCEN_ROAD_LANDSLIDE_SHOCK",
+    interventions: str = "SCEN_INTEGRATED_POLICY_RECOVERY",
+    seed: int = 42,
+) -> dict[str, Any]:
+    """Perform multi-scenario counterfactual comparative synthesis."""
+    interv_list = [i.strip() for i in interventions.split(",") if i.strip()]
+    report = _ai_comparator.compare(
+        baseline_id=baseline_id,
+        shock_id=shock_id,
+        intervention_ids=interv_list,
+        seed=seed,
+    )
+    return {
+        "baseline_id": report.baseline_id,
+        "shock_id": report.shock_id,
+        "evaluated_interventions": report.evaluated_interventions,
+        "relative_household_welfare_delta_pct": report.relative_household_welfare_delta_pct,
+        "school_attendance_protection_pct": report.school_attendance_protection_pct,
+        "clinic_overload_mitigation_pct": report.clinic_overload_mitigation_pct,
+        "double_entry_ledger_verified": report.double_entry_ledger_verified,
+        "synthesis_narrative": report.synthesis_narrative,
+        "causality_caveat": report.causality_caveat,
+    }
+
+
+@router.get("/ai/context/partition")
+def get_ai_context_partition_endpoint(partition: str = "SIMULATION_ONTOLOGY") -> dict[str, Any]:
+    """Inspect knowledge partition metadata with privacy safeguards."""
+    return _ai_context.get_partition_context(partition)
