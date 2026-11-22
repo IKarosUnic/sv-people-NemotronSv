@@ -36,8 +36,15 @@ from saltbor.scientific.validation import (
     SALVADORAN_EXTERNAL_BENCHMARKS,
     ScientificValidationFramework,
 )
+from saltbor.scientific.external_validation import (
+    BacktestValidationResult,
+    ExternalHistoricalValidator,
+    HistoricalTimeSeriesBenchmark,
+    SALVADORAN_HISTORICAL_SERIES,
+)
 
 __all__ = [
+    "BacktestValidationResult",
     "CausalEdge",
     "CausalInferenceEngine",
     "CausalLinkQuality",
@@ -51,6 +58,8 @@ __all__ = [
     "EvidenceValidationTier",
     "ExperimentType",
     "ExternalBenchmark",
+    "ExternalHistoricalValidator",
+    "HistoricalTimeSeriesBenchmark",
     "InterventionDomain",
     "MediationResult",
     "MultiSeedExperimentResult",
@@ -59,6 +68,7 @@ __all__ = [
     "PopulationSamplingEngine",
     "SALVADORAN_DEPARTMENT_PROFILES",
     "SALVADORAN_EXTERNAL_BENCHMARKS",
+    "SALVADORAN_HISTORICAL_SERIES",
     "ScientificExperimentProtocol",
     "ScientificExperimentationEngine",
     "ScientificValidationFramework",

@@ -402,6 +402,17 @@ class SimulationRunner:
             civilization_name="Sociedad Cuscatleca",
         )
 
+        # Phase 1.16 Modular Tick Pipeline, Adaptive LOD Budget & Live Scenario Bridge
+        from saltbor.simulation.tick_pipeline import (
+            AdaptiveLODBudgetController,
+            TickStagePipeline,
+        )
+        from saltbor.simulation.scenario_bridge import LiveScenarioBridge
+
+        self.tick_pipeline = TickStagePipeline()
+        self.lod_budget_controller = AdaptiveLODBudgetController()
+        self.live_scenario_bridge = LiveScenarioBridge(self)
+
     def _register_orchestrator_engines(self) -> None:
         """Register all civilization engines into the master orchestrator."""
 
@@ -414,10 +425,24 @@ class SimulationRunner:
                     res = self.salvadoran_adesco.execute_cuchubal_turn(c.circle_id)
                     if res.get("success"):
                         ben_uid = res.get("beneficiary")
+                        collected_pot = 0.0
+                        for m_uid in c.member_uids:
+                            try:
+                                member = self.population.get(uuid.UUID(m_uid))
+                            except ValueError:
+                                member = None
+                            if member is not None:
+                                contrib = min(float(member.physical_state.money), float(c.contribution_per_turn_usd))
+                                member.physical_state.money = round(float(member.physical_state.money) - contrib, 4)
+                                collected_pot += contrib
                         if ben_uid:
-                            h = self.population.get(uuid.UUID(ben_uid))
-                            if h:
-                                h.physical_state.money += res.get("pot_received_usd", 0.0)
+                            try:
+                                h = self.population.get(uuid.UUID(ben_uid))
+                            except ValueError:
+                                h = None
+                            if h is not None:
+                                h.physical_state.money = round(float(h.physical_state.money) + collected_pot, 4)
+                        res["pot_received_usd"] = round(collected_pot, 4)
                         self.event_bus.emit(
                             SimulationEvent(
                                 event_type=EventType.CUCHUBAL_TURN_EXECUTED,
@@ -1577,7 +1602,11 @@ class SimulationRunner:
         # population, or restored from the extension checkpoint if resuming.
         for human in self.population.get_all():
             self.psychology.ensure(human)
-        self._psych_event_cursor = len(getattr(self.event_bus, "event_log", []))
+        self._psych_event_cursor = getattr(
+            self.event_bus,
+            "total_emitted_count",
+            len(getattr(self.event_bus, "event_log", [])),
+        )
 
         # Emit simulation started event
         self.event_bus.emit(
@@ -1592,22 +1621,39 @@ class SimulationRunner:
 
     def step(self) -> Tick:
         """Advance the simulation by exactly one discrete tick (15 simulated minutes)."""
+        from saltbor.simulation.tick_pipeline import TickStageRecord
+
         t0 = time.perf_counter()
-        initial_event_count = len(self.event_bus.event_log)
+        initial_event_count = getattr(
+            self.event_bus,
+            "total_emitted_count",
+            len(getattr(self.event_bus, "event_log", [])),
+        )
 
         current_tick = self.clock.tick()
+        stage_rec = TickStageRecord(tick=int(current_tick))
 
         # Step environmental climate & weather dynamics
+        t_env = time.perf_counter()
         self.environment.step(current_tick)
         self.regional_trade.step(current_tick)
+        stage_rec.environment_ms = (time.perf_counter() - t_env) * 1000.0
 
         # Master orchestrator steps scheduled and periodic civilization engines
+        t_orch = time.perf_counter()
         self.orchestrator.step(current_tick)
 
         # Step active universal human activity domains
         self.domain_engine.step(current_tick)
+        stage_rec.orchestrator_ms = (time.perf_counter() - t_orch) * 1000.0
+
+        # Phase 1.16 Live Scenario Bridge: step active declarative scenarios injected into runner
+        t_scen = time.perf_counter()
+        self.live_scenario_bridge.step(current_tick)
+        stage_rec.live_scenario_ms = (time.perf_counter() - t_scen) * 1000.0
 
         # Day transition event and cultural maintenance
+        t_daily = time.perf_counter()
         if self.clock.tick_of_day == 0:
             # Phase 1.5 Dynamic Household living costs & utility overhead
             for h_ledger in self.household_ledgers.values():
@@ -1736,15 +1782,24 @@ class SimulationRunner:
                     importance=0.4,
                 )
             )
+        stage_rec.daily_rollover_ms = (time.perf_counter() - t_daily) * 1000.0
 
         # Build spatial location index for O(1) co-location discovery
+        t_pop = time.perf_counter()
         self.population.build_location_index()
 
-        # Determine agent update sequence
+        # Determine agent update sequence and apply adaptive LOD time-budget filtering
         execution_order = self.scheduler.get_execution_order(self.population, current_tick)
+        active_humans, deferred_count = self.lod_budget_controller.select_humans_for_tick(
+            execution_order=execution_order,
+            current_tick=current_tick,
+            lod_manager=self.lod_manager,
+        )
+        stage_rec.active_agents_updated = len(active_humans)
+        stage_rec.deferred_lod_agents = deferred_count
 
-        # Update each human
-        for human in execution_order:
+        # Update each active human
+        for human in active_humans:
             curr_loc = human.physical_state.current_location_id
             # Discover others situated at the same location
             co_located = [
@@ -1769,18 +1824,25 @@ class SimulationRunner:
         # Phase 1.5 Extension: global daily orchestration (exposure, treatment,
         # accidents, disasters, romance, family lifecycle).
         self.extension.step(current_tick)
+        stage_rec.population_update_ms = (time.perf_counter() - t_pop) * 1000.0
 
         # Phase 1.8 Integrated World: advances street journeys, verifies place occupancy,
         # handles road blockages, and synchronizes community historical memory.
+        t_world = time.perf_counter()
         self.integrated_world.step(current_tick)
+        stage_rec.world_transit_ms = (time.perf_counter() - t_world) * 1000.0
 
         # Phase 1.7: appraise the events that actually reached each person in
         # this tick, then advance the psychological state.  The cursor prevents
         # replaying history and keeps the cost proportional to new events.
-        event_log = getattr(self.event_bus, "event_log", [])
-        new_events = event_log[self._psych_event_cursor:]
-        if new_events:
+        t_psych = time.perf_counter()
+        if hasattr(self.event_bus, "events_since"):
+            new_events, self._psych_event_cursor = self.event_bus.events_since(self._psych_event_cursor)
+        else:
+            event_log = getattr(self.event_bus, "event_log", [])
+            new_events = event_log[self._psych_event_cursor:]
             self._psych_event_cursor = len(event_log)
+        if new_events:
             self.psychology.process_events(
                 new_events,
                 self.population,
@@ -1794,13 +1856,28 @@ class SimulationRunner:
             lod_manager=self.lod_manager,
             tick_minutes=self.config.tick_duration_minutes,
         )
+        stage_rec.psychology_ms = (time.perf_counter() - t_psych) * 1000.0
 
         # Periodic checkpointing
+        t_ckpt = time.perf_counter()
         if current_tick % self.config.checkpoint_interval_ticks == 0:
             self.checkpoint()
+        stage_rec.checkpoint_ms = (time.perf_counter() - t_ckpt) * 1000.0
 
         elapsed = time.perf_counter() - t0
-        events_emitted = len(self.event_bus.event_log) - initial_event_count
+        stage_rec.total_ms = elapsed * 1000.0
+        self.tick_pipeline.record(stage_rec)
+        self.lod_budget_controller.record_tick_duration(
+            duration_ms=stage_rec.total_ms,
+            population_size=len(execution_order),
+        )
+
+        end_event_count = getattr(
+            self.event_bus,
+            "total_emitted_count",
+            len(getattr(self.event_bus, "event_log", [])),
+        )
+        events_emitted = max(0, end_event_count - initial_event_count)
 
         self.metrics.record_tick(
             tick=current_tick,

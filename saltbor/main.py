@@ -334,6 +334,74 @@ def cmd_serve(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_simular(args: argparse.Namespace) -> int:
+    """Run an effortless 1-click preset or natural-language Spanish event simulation."""
+    from saltbor.simulation.quick_simulator import QuickSimulator
+
+    qsim = QuickSimulator()
+    if getattr(args, "listar", False):
+        print("\n" + "=" * 80)
+        print("  EVENTOS RÁPIDOS EN 1 CLIC (SALTBOR QUICK SIMULATOR)")
+        print("=" * 80)
+        for p in qsim.list_presets():
+            print(f"  * {p['preset_id']:<28} -> {p['icon']} {p['title']} ({p['default_days']} días, {p['default_territory']})")
+            print(f"    {p['subtitle']}")
+        print("=" * 80 + "\n")
+        return 0
+
+    if getattr(args, "lat", None) is not None and getattr(args, "lon", None) is not None:
+        from saltbor.simulation.pinpoint_simulator import PinpointPlacementSimulator
+
+        psim = PinpointPlacementSimulator()
+        pres = psim.place_and_simulate(
+            lat=float(args.lat),
+            lon=float(args.lon),
+            description=args.evento,
+            category=args.categoria,
+            unit_price_usd=args.precio,
+            initial_capital_usd=args.capital,
+            capacity=args.capacidad,
+            catchment_radius_m=args.radio,
+            days=args.dias or 7,
+        )
+        print("\n" + "=" * 80)
+        print(f"  {pres['titulo']} — UBICACIÓN ULTRAPRECISA EN MAPA")
+        print(f"  Coordenadas WGS84 : ({pres['coordenadas']['lat']:.6f}, {pres['coordenadas']['lon']:.6f})")
+        print(f"  Calle / Vía OSM   : {pres['ubicacion_exacta']['nearest_street_osm']} ({pres['ubicacion_exacta']['district_name']}, {pres['ubicacion_exacta']['municipality_name']})")
+        print(f"  Estado            : {pres['semaforo']}")
+        print("=" * 80)
+        for card in pres["tarjetas_impacto"]:
+            print(f"  {card['icono']} {card['titulo']:<26}: {card['valor']}")
+            print(f"     -> {card['explicacion']}")
+        print("-" * 80)
+        print(f"  RESUMEN: {pres['resumen_sencillo']}")
+        print("=" * 80 + "\n")
+        return 0
+
+    res = qsim.run(
+        prompt_or_preset=args.evento,
+        territory=args.territorio,
+        days=args.dias,
+        include_relief=args.con_ayuda if args.con_ayuda else None,
+        seed=args.seed,
+    )
+    print("\n" + "=" * 80)
+    print(f"  {res['titulo']}")
+    print(f"  Territorio: {res['territorio']} ({res['dias_simulados']} días) | Estado: {res['semaforo']}")
+    print("=" * 80)
+    for card in res["tarjetas_impacto"]:
+        print(f"  {card['icono']} {card['titulo']:<26}: {card['valor']}")
+        print(f"     -> {card['explicacion']}")
+    rc = res.get("reporte_comercial", {})
+    if rc:
+        print(f"  🏪 Negocio / Comercio Local   : Caja ${rc['caja_negocio_local_usd']:.2f} ({rc['estado_negocio']}) | Clientela {rc['afluencia_clientes_pct']:.0f}%")
+        print(f"     -> Abasto: {rc['centro_abasto_mayorista']} ({rc['distancia_mayorista_km']:.1f} km, Flete base +{rc['recargo_flete_base_pct']:.1f}%)")
+    print("-" * 80)
+    print(f"  RESUMEN: {res['resumen_sencillo']}")
+    print("=" * 80 + "\n")
+    return 0
+
+
 def main() -> int:
     """CLI argument routing."""
     parser = argparse.ArgumentParser(
@@ -384,10 +452,28 @@ def main() -> int:
     lab_parser.add_argument("--export", action="store_true", help="Export markdown and json reports")
     lab_parser.add_argument("--export-dir", type=str, default="experiments/results", help="Destination folder for exported reports")
 
+    # simular command (Phase 1.18 Citizen Quick Simulator)
+    sim_parser = subparsers.add_parser("simular", help="Simular cualquier evento en 1 comando, lenguaje natural o punto exacto (lat, lon)")
+    sim_parser.add_argument("evento", nargs="?", default="temporal_deslave", help="ID de preset o frase específica en español (ej. 'Pupusería El Comalito a $0.85')")
+    sim_parser.add_argument("--territorio", type=str, default=None, help="Cantón, distrito o municipio de El Salvador")
+    sim_parser.add_argument("--lat", type=float, default=None, help="Latitud exacta WGS84 del punto en el mapa (ej. 13.697850)")
+    sim_parser.add_argument("--lon", type=float, default=None, help="Longitud exacta WGS84 del punto en el mapa (ej. -89.191420)")
+    sim_parser.add_argument("--categoria", type=str, default=None, help="Categoría exacta (pupuseria, tienda_pulperia, farmacia, taller, clinica, escuela, bloqueo_obra_vial)")
+    sim_parser.add_argument("--precio", type=float, default=None, help="Precio unitario de venta en USD (ej. 0.85)")
+    sim_parser.add_argument("--capital", type=float, default=None, help="Capital o caja inicial en USD (ej. 150.0)")
+    sim_parser.add_argument("--capacidad", type=int, default=None, help="Aforo máximo de personas (ej. 25)")
+    sim_parser.add_argument("--radio", type=float, default=400.0, help="Radio peatonal de influencia en metros (default: 400m)")
+    sim_parser.add_argument("--dias", type=int, default=None, help="Duración en días simulados (ej. 3, 5, 7, 14)")
+    sim_parser.add_argument("--con-ayuda", action="store_true", help="Incluir paquete de ayuda pública (calle, brigada médica y bono)")
+    sim_parser.add_argument("--listar", action="store_true", help="Listar los eventos preconfigurados listos para usar")
+    sim_parser.add_argument("--seed", type=int, default=42, help="Semilla aleatoria reproducible")
+
     args = parser.parse_args()
 
     if args.command == "serve":
         return cmd_serve(args)
+    elif args.command == "simular":
+        return cmd_simular(args)
     elif args.command == "run" or args.command is None:
         if args.command is None:
             # Default to running 96 ticks

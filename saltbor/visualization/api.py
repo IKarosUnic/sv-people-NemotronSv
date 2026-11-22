@@ -6294,3 +6294,16 @@ def compare_ai_counterfactual_endpoint(
 def get_ai_context_partition_endpoint(partition: str = "SIMULATION_ONTOLOGY") -> dict[str, Any]:
     """Inspect knowledge partition metadata with privacy safeguards."""
     return _ai_context.get_partition_context(partition)
+
+
+# ============================================================================
+# SALTBOR PHASE 1.16–1.17 — MODULAR SUB-ROUTERS
+# ============================================================================
+from saltbor.visualization.routers import (
+    national_validation_router,
+    pipeline_router,
+)
+
+router.include_router(pipeline_router)
+router.include_router(national_validation_router)
+

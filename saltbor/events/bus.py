@@ -31,6 +31,7 @@ class EventBus:
         default_factory=list, init=False, repr=False
     )
     _max_log_size: int = 10_000
+    _total_emitted_count: int = field(default=0, init=False, repr=False)
 
     # ---- Subscription ----
 
@@ -70,6 +71,7 @@ class EventBus:
         handlers (subscribed with ``event_type=None``).
         """
         # Log the event
+        self._total_emitted_count += 1
         self._event_log.append(event)
         if len(self._event_log) > self._max_log_size:
             # Keep the most recent half
@@ -104,6 +106,20 @@ class EventBus:
         """Read-only view of the recent event log."""
         return list(self._event_log)
 
+    @property
+    def total_emitted_count(self) -> int:
+        """Monotonic count of events emitted since initialization or last clear."""
+        return self._total_emitted_count
+
+    def events_since(self, cursor: int) -> tuple[list[SimulationEvent], int]:
+        """Return events emitted since monotonic cursor without full-log copying or truncation drift."""
+        new_count = self._total_emitted_count - max(0, cursor)
+        if new_count <= 0:
+            return [], self._total_emitted_count
+        if new_count >= len(self._event_log):
+            return list(self._event_log), self._total_emitted_count
+        return self._event_log[-new_count:], self._total_emitted_count
+
     def events_of_type(self, event_type: EventType) -> list[SimulationEvent]:
         """Filter the event log by type."""
         return [e for e in self._event_log if e.event_type == event_type]
@@ -115,6 +131,7 @@ class EventBus:
     def clear_log(self) -> None:
         """Clear the in-memory event log."""
         self._event_log.clear()
+        self._total_emitted_count = 0
 
     @property
     def handler_count(self) -> int:

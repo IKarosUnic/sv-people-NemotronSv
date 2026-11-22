@@ -100,6 +100,10 @@
                     <option value="coffee_economic_boom">Bonanza Cafetalera</option>
                 </select>
 
+                <button id="btn-open-quick-sim" class="btn btn-sm btn-primary" title="Simular Evento en 1 Clic o con Texto Simple" style="display:flex; align-items:center; gap:4px; font-weight:600;">
+                    <span>✨</span> <span>Evento Rápido</span>
+                </button>
+
                 <button id="btn-open-interventions" class="btn btn-sm btn-secondary" title="Panel de Intervenciones del Observador" style="display:flex; align-items:center; gap:4px; font-weight:600; color:var(--accent-sky);">
                     <span>⚡</span> <span>Intervenciones</span>
                 </button>
@@ -2083,6 +2087,7 @@
                     <button id="btn-close-interventions" class="btn btn-sm btn-icon" title="Cerrar ventana">✕</button>
                 </div>
                 <div class="modal-tabs">
+                    <button class="modal-tab-btn" data-tab="quick">✨ Evento Fácil (1 Clic)</button>
                     <button class="modal-tab-btn active" data-tab="activity">Solicitar Actividad</button>
                     <button class="modal-tab-btn" data-tab="assembly">Asamblea ADESCO</button>
                     <button class="modal-tab-btn" data-tab="economic">Evento Económico</button>
@@ -2193,6 +2198,126 @@
                             Radicar Demanda en Tribunal
                         </button>
                     </div>
+
+                    <!-- Tab 5: Ultra-Simple Quick Event Launcher (1-Click or Plain Spanish) -->
+                    <div id="modal-tab-quick" class="modal-tab-content" style="display:none;">
+                        <p class="tab-desc">Elige una situación con <strong>1 solo clic</strong> o escríbela con tus propias palabras. El simulador la aplicará en el mapa y te mostrará el resumen en lenguaje sencillo.</p>
+                        <div id="quick-presets-grid" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; margin-bottom:14px;">
+                            <button type="button" class="btn btn-secondary quick-preset-btn" data-preset="abrir_pupuseria_o_tienda" style="text-align:left; padding:8px;">
+                                <strong>🫓 Pupusería / Tienda Local</strong><br/><small>Viabilidad comercial, caja y ventas</small>
+                            </button>
+                            <button type="button" class="btn btn-secondary quick-preset-btn" data-preset="riesgo_fiado_comercial" style="text-align:left; padding:8px;">
+                                <strong>📓 Riesgo de Fiado en Tienda</strong><br/><small>Liquidez de negocio y cartera fiada</small>
+                            </button>
+                            <button type="button" class="btn btn-secondary quick-preset-btn" data-preset="encarecimiento_mayorista_flete" style="text-align:left; padding:8px;">
+                                <strong>🚚 Subida de Flete Mayorista</strong><br/><small>Impacto logístico en margen y clientela</small>
+                            </button>
+                            <button type="button" class="btn btn-secondary quick-preset-btn" data-preset="auge_remesas_y_consumo" style="text-align:left; padding:8px;">
+                                <strong>💸 Entrada de Remesas y Ventas</strong><br/><small>Reactivación de consumo y pago de fiado</small>
+                            </button>
+                            <button type="button" class="btn btn-secondary quick-preset-btn" data-preset="cooperativa_y_cuchubal" style="text-align:left; padding:8px;">
+                                <strong>🤝 Cooperativa y Cuchubal</strong><br/><small>Ahorro rotativo y compras conjuntas</small>
+                            </button>
+                            <button type="button" class="btn btn-secondary quick-preset-btn" data-preset="temporal_deslave" style="text-align:left; padding:8px;">
+                                <strong>🌧️ Temporal y Deslave</strong><br/><small>Bloqueo vial de 5 días y abasto</small>
+                            </button>
+                            <button type="button" class="btn btn-secondary quick-preset-btn" data-preset="alza_canasta_basica" style="text-align:left; padding:8px;">
+                                <strong>🌽 Subida de Maíz y Frijol</strong><br/><small>Impacto en bolsillo y fiado (7 días)</small>
+                            </button>
+                            <button type="button" class="btn btn-secondary quick-preset-btn" data-preset="comparativa_choque_vs_ayuda" style="text-align:left; padding:8px;">
+                                <strong>⚖️ Crisis vs. Paquete de Ayuda</strong><br/><small>Simula choque con rescate completo</small>
+                            </button>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="quick-sim-prompt">O descríbelo con tus propias palabras:</label>
+                            <input type="text" id="quick-sim-prompt" class="input-text-full" placeholder="Ej: Lluvia fuerte y derrumbe en Chalatenango por 5 días..." value="Simula un deslave vial de 5 días en Cantón El Rosario con alza de precios de alimentos" />
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                            <div class="form-group">
+                                <label for="quick-sim-territory">Lugar / Municipio (opcional):</label>
+                                <input type="text" id="quick-sim-territory" class="input-text-full" placeholder="Ej: Cantón El Rosario, San Miguel..." value="Cantón El Rosario" />
+                            </div>
+                            <div class="form-group">
+                                <label for="quick-sim-days">Duración (en Días):</label>
+                                <select id="quick-sim-days" class="dropdown-select-full">
+                                    <option value="3">3 Días</option>
+                                    <option value="5" selected>5 Días</option>
+                                    <option value="7">7 Días (1 Semana)</option>
+                                    <option value="14">14 Días (2 Semanas)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+                            <input type="checkbox" id="quick-sim-relief" />
+                            <label for="quick-sim-relief" style="margin:0; cursor:pointer;">✅ Incluir paquete de ayuda comunitaria (reparación de calle + brigada médica + bono solidario)</label>
+                        </div>
+                        <button type="button" id="btn-run-quick-sim" class="btn btn-primary" style="margin-top:10px; width:100%; font-weight:600;">
+                            🚀 Simular Evento Ahora
+                        </button>
+
+                        <!-- Ultra-Precise Map Point Placement Section -->
+                        <div style="margin-top:16px; padding-top:12px; border-top:1px solid rgba(148,163,184,0.25);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <strong style="font-size:13px; color:var(--accent-sky);">📍 ¿Ubicación Ultraprecisa? Colocar en Punto Fijo del Mapa</strong>
+                                <button type="button" id="btn-pick-map-point" class="btn btn-sm btn-secondary" title="Haz clic aquí y luego toca cualquier esquina exacta en el mapa">
+                                    🎯 Elegir Punto en el Mapa
+                                </button>
+                            </div>
+                            <div id="pinpoint-street-preview" style="font-size:11px; opacity:0.85; margin-bottom:8px;">
+                                Coordenada seleccionada: WGS84 (13.697850, -89.191420) — Haz clic en "🎯 Elegir Punto en el Mapa" o escribe las coordenadas exactas.
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr 1.2fr; gap:8px;">
+                                <div class="form-group">
+                                    <label for="pinpoint-lat">Latitud Exacta:</label>
+                                    <input type="number" id="pinpoint-lat" class="input-text-full" step="0.00001" value="13.69785" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="pinpoint-lon">Longitud Exacta:</label>
+                                    <input type="number" id="pinpoint-lon" class="input-text-full" step="0.00001" value="-89.19142" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="pinpoint-category">¿Qué quieres colocar ahí?</label>
+                                    <select id="pinpoint-category" class="dropdown-select-full">
+                                        <option value="pupuseria">🫓 Pupusería / Comedor</option>
+                                        <option value="tienda_pulperia">🏪 Tienda / Pulpería</option>
+                                        <option value="farmacia">💊 Farmacia / Botiquín</option>
+                                        <option value="taller">🔧 Taller Mecánico / Artesanal</option>
+                                        <option value="clinica">🏥 Puesto / Unidad de Salud</option>
+                                        <option value="escuela">🎓 Escuela / Aula Técnica</option>
+                                        <option value="bloqueo_obra_vial">🚧 Bloqueo / Obra en Esa Calle</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="pinpoint-desc">Especificación detallada (Nombre, producto, horario o condiciones):</label>
+                                <input type="text" id="pinpoint-desc" class="input-text-full" value="Abrir pupusería 'El Comal de Oro' con pupusas a $0.85, 25 personas de capacidad y $180 de capital" />
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+                                <div class="form-group">
+                                    <label for="pinpoint-price">Precio Venta ($ USD):</label>
+                                    <input type="number" id="pinpoint-price" class="input-text-full" step="0.05" min="0" value="0.85" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="pinpoint-capital">Capital Inicial ($ USD):</label>
+                                    <input type="number" id="pinpoint-capital" class="input-text-full" step="10" min="10" value="180" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="pinpoint-radius">Radio Peatonal (m):</label>
+                                    <input type="number" id="pinpoint-radius" class="input-text-full" step="50" min="50" max="2000" value="350" />
+                                </div>
+                            </div>
+                            <button type="button" id="btn-run-pinpoint-sim" class="btn btn-primary" style="margin-top:6px; width:100%; font-weight:600;">
+                                📍 Colocar en Este Punto Exacto y Simular
+                            </button>
+                        </div>
+
+                        <div id="quick-sim-result-box" style="display:none; margin-top:14px; padding:12px; border-radius:8px; background:rgba(15,23,42,0.75); border:1px solid rgba(56,189,248,0.35);">
+                            <div id="quick-sim-header" style="font-weight:700; font-size:14px; margin-bottom:8px;"></div>
+                            <div id="quick-sim-cards" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; margin-bottom:10px;"></div>
+                            <div id="quick-sim-summary" style="font-size:12px; line-height:1.45; opacity:0.92;"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2201,5 +2326,6 @@
     <!-- Core Interactive Application Script -->
     <script src="assets/maplibre/maplibre-gl.js"></script>
     <script src="app.js"></script>
+    <script type="module" src="modules/live_bridge_observatory.js"></script>
 </body>
 </html>
