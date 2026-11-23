@@ -1,0 +1,62 @@
+{
+  "phase": "1.17",
+  "hardware_target": "Ryzen 7 8700G / 32 GB RAM / Radeon 780M",
+  "rss_start_mb": 98.78,
+  "rss_end_mb": 207.76,
+  "rtree_queries": {
+    "soyapango_buildings_500": {
+      "count": 500,
+      "latency_ms": 12.71
+    },
+    "santa_tecla_buildings_500": {
+      "count": 500,
+      "latency_ms": 10.55
+    },
+    "san_miguel_buildings_500": {
+      "count": 500,
+      "latency_ms": 9.98
+    },
+    "santa_ana_buildings_500": {
+      "count": 500,
+      "latency_ms": 7.22
+    }
+  },
+  "national_262_district_coverage_ms": 957.99,
+  "coverage_tier_counts": {
+    "GOOD": 199,
+    "PARTIAL": 61,
+    "POOR": 2,
+    "INSUFFICIENT": 0
+  },
+  "single_scenario_timings_ms": {
+    "Soyapango": {
+      "state": "COMPLETED",
+      "latency_ms": 812.45,
+      "buildings": 2195
+    },
+    "San Miguel": {
+      "state": "COMPLETED",
+      "latency_ms": 411.47,
+      "buildings": 939
+    },
+    "Santa Ana": {
+      "state": "COMPLETED",
+      "latency_ms": 437.96,
+      "buildings": 1264
+    },
+    "Chalatenango": {
+      "state": "COMPLETED",
+      "latency_ms": 192.82,
+      "buildings": 1248
+    }
+  },
+  "concurrent_4_scenarios_wall_ms": 1660.5,
+  "concurrent_worker_ms": [
+    1584.54,
+    1644.01,
+    1452.75,
+    1496.19
+  ],
+  "historic_center_96tick_ms_per_tick": 8.108,
+  "experiments_passed": "20/20"
+}

@@ -11,7 +11,7 @@
     // APPLICATION STATE
     // =========================================================================
     const state = {
-        currentView: "world",
+        currentView: "studio",
         isRunning: false,
         speedMultiplier: 1,
         currentTick: 0,
@@ -108,8 +108,11 @@
         fetchLaboratoryExperiments();
         loadReport("phase13_summary");
 
-        // Immediately initialize real GIS map on the primary viewport
-        initOrResizeGIS25D();
+        // Lazily initialize real GIS map only when the map view is active on startup
+        document.body.classList.toggle("view-mode-studio", state.currentView === "studio");
+        if (state.currentView === "world") {
+            initOrResizeGIS25D();
+        }
 
         // Start render loops (stub preserved for tests)
         requestAnimationFrame(renderWorldLoop);
@@ -201,6 +204,10 @@
 
     function switchView(viewName) {
         state.currentView = viewName;
+        document.body.classList.toggle("view-mode-studio", viewName === "studio");
+        if (viewName === "studio") {
+            document.getElementById("inspector-panel")?.classList.add("collapsed");
+        }
 
         // Update nav items
         document.querySelectorAll(".nav-item").forEach((it) => {
@@ -214,6 +221,7 @@
 
         // View specific refresh
         if (viewName === "world" || viewName === "gis25d") {
+            window.dispatchEvent(new CustomEvent("saltbor:restore-world-map"));
             initOrResizeGIS25D();
         } else if (viewName === "knowledge") {
             fetchKnowledgeGraph();
@@ -1689,7 +1697,9 @@
         const title = document.getElementById("inspector-title");
         const body = document.getElementById("inspector-content");
         const panel = document.getElementById("inspector-panel");
-        panel.classList.remove("collapsed");
+        if (state.currentView !== "studio") {
+            panel.classList.remove("collapsed");
+        }
 
         title.textContent = `Individuo #${d.identity.serial}`;
         body.innerHTML = `
@@ -1722,7 +1732,9 @@
         const title = document.getElementById("inspector-title");
         const body = document.getElementById("inspector-content");
         const panel = document.getElementById("inspector-panel");
-        panel.classList.remove("collapsed");
+        if (state.currentView !== "studio") {
+            panel.classList.remove("collapsed");
+        }
 
         title.textContent = "Establecimiento Real";
         body.innerHTML = `
@@ -1759,6 +1771,9 @@
         btn.addEventListener("click", () => {
             state.theme = state.theme === "dark" ? "light" : "dark";
             document.documentElement.setAttribute("data-theme", state.theme);
+            if (state.gisMap && state.gisMap.getLayer("background")) {
+                state.gisMap.setPaintProperty("background", "background-color", state.theme === "dark" ? "#111c33" : "#e2e8f0");
+            }
         });
     }
 
@@ -2175,7 +2190,7 @@
             }
 
             const isDark = state.theme === "dark";
-            const bgColor = isDark ? "#090d16" : "#f1f5f9";
+            const bgColor = isDark ? "#111c33" : "#e2e8f0";
 
             state.gisMap = new maplibregl.Map({
                 container: "maplibre-viewport",
@@ -2361,7 +2376,7 @@
             id: "gis-layer-national-highways",
             type: "line",
             source: "src-national-highways",
-            maxzoom: 14.0,
+            maxzoom: 19.0,
             paint: {
                 "line-color": [
                     "match",
@@ -3085,7 +3100,10 @@
         const faenasContainer = document.getElementById("adesco-faenas-container");
         const cuchubalesContainer = document.getElementById("adesco-cuchubales-container");
         fetch("/api/communities")
-            .then((r) => r.json())
+            .then((r) => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            })
             .then((data) => {
                 const faenas = data.faenas || [];
                 const cuchubales = data.cuchubales || [];
@@ -3095,15 +3113,17 @@
                         faenasContainer.innerHTML = "<div class='loading-placeholder'>Sin faenas comunitarias activas.</div>";
                     } else {
                         faenasContainer.innerHTML = faenas.map((f) => {
-                            const pct = Math.min(100, Math.round((f.completed_labor_hours / (f.required_labor_hours || 1)) * 100));
+                            const completedHours = Number(f.accumulated_hours ?? f.completed_labor_hours ?? 0);
+                            const requiredHours = Number(f.required_hours ?? f.required_labor_hours ?? 1);
+                            const pct = Math.min(100, Math.round((completedHours / (requiredHours || 1)) * 100));
                             return `
                                 <div style="margin-bottom:12px; padding:8px; background:var(--bg-base); border-radius:4px; border:1px solid var(--border-subtle);">
                                     <div style="display:flex; justify-content:space-between; font-weight:700; margin-bottom:4px;">
-                                        <span>${f.name}</span>
+                                        <span>${f.name || "Faena Comunitaria"}</span>
                                         <span style="color:var(--accent-sky);">${pct}%</span>
                                     </div>
                                     <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">
-                                        Comunidad: ${f.community_id} | Problema: ${f.target_problem} | Horas: ${f.completed_labor_hours.toFixed(1)} / ${f.required_labor_hours.toFixed(1)} hrs
+                                        Comunidad: ${f.community_id || "-"} | Problema: ${f.target_problem || "-"} | Horas: ${completedHours.toFixed(1)} / ${requiredHours.toFixed(1)} hrs
                                     </div>
                                     <div class="trait-track"><div class="trait-fill" style="width:${pct}%; background:#10b981;"></div></div>
                                 </div>
@@ -3118,16 +3138,21 @@
                     } else {
                         cuchubalesContainer.innerHTML = `
                             <table class="data-table">
-                                <thead><tr><th>Cuchubal</th><th>Comunidad</th><th>Fondo Acumulado</th><th>Turno Actual</th></tr></thead>
+                                <thead><tr><th>Cuchubal</th><th>Comunidad / Org.</th><th>Fondo / Turno</th><th>Estado</th></tr></thead>
                                 <tbody>
-                                    ${cuchubales.map((c) => `
+                                    ${cuchubales.map((c) => {
+                                        const poolUsd = Number(c.pot_per_turn ?? c.accumulated_pool ?? 0);
+                                        const org = c.community_id ?? c.organizer_uid ?? "-";
+                                        const turnStatus = c.current_turn_recipient || (c.turns_completed != null ? `Turnos: ${c.turns_completed}` : "Pendiente");
+                                        return `
                                         <tr>
-                                            <td><strong>${c.name}</strong></td>
-                                            <td>${c.community_id}</td>
-                                            <td style="color:#10b981;">$${c.accumulated_pool.toFixed(2)}</td>
-                                            <td>${c.current_turn_recipient || 'Pendiente'}</td>
+                                            <td><strong>${c.name || "Cuchubal"}</strong></td>
+                                            <td>${org}</td>
+                                            <td style="color:#10b981;">$${poolUsd.toFixed(2)}</td>
+                                            <td>${turnStatus}</td>
                                         </tr>
-                                    `).join("")}
+                                    `;
+                                    }).join("")}
                                 </tbody>
                             </table>
                         `;
@@ -3177,7 +3202,10 @@
 
         if (storesContainer) {
             fetch("/api/commerce/stores")
-                .then((r) => r.json())
+                .then((r) => {
+                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                    return r.json();
+                })
                 .then((data) => {
                     const stores = Array.isArray(data) ? data : (data.stores || []);
                     if (stores.length === 0) {
@@ -3189,23 +3217,29 @@
                                 <tbody>
                                     ${stores.map((s) => `
                                         <tr>
-                                            <td><strong>${s.name}</strong></td>
-                                            <td>${s.owner_name}</td>
-                                            <td style="color:#10b981;">$${s.cash_on_hand.toFixed(2)}</td>
-                                            <td>$${s.daily_sales_revenue.toFixed(2)}</td>
-                                            <td>${s.inventory_items_count} ítems</td>
+                                            <td><strong>${s.name || "-"}</strong></td>
+                                            <td>${s.owner_name || "-"}</td>
+                                            <td style="color:#10b981;">$${Number(s.cash_on_hand ?? 0).toFixed(2)}</td>
+                                            <td>$${Number(s.daily_sales_revenue ?? 0).toFixed(2)}</td>
+                                            <td>${s.inventory_items_count ?? 0} ítems</td>
                                         </tr>
                                     `).join("")}
                                 </tbody>
                             </table>
                         `;
                     }
+                })
+                .catch((err) => {
+                    console.error("Error fetching stores data", err);
                 });
         }
 
         if (fiadoContainer) {
             fetch("/api/commerce/fiado")
-                .then((r) => r.json())
+                .then((r) => {
+                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                    return r.json();
+                })
                 .then((data) => {
                     const accounts = Array.isArray(data) ? data : (data.fiado_accounts || []);
                     if (accounts.length === 0) {
@@ -3217,18 +3251,21 @@
                                 <tbody>
                                     ${accounts.map((a) => `
                                         <tr>
-                                            <td><strong>${a.customer_name}</strong></td>
-                                            <td>${a.store_name}</td>
-                                            <td style="color:${a.current_balance > 0 ? '#f59e0b' : '#10b981'};">$${a.current_balance.toFixed(2)}</td>
-                                            <td>$${a.credit_limit.toFixed(2)}</td>
-                                            <td>${Math.round(a.trust_score * 100)}%</td>
-                                            <td><span class="badge-gis">${a.status}</span></td>
+                                            <td><strong>${a.customer_name || "-"}</strong></td>
+                                            <td>${a.store_name || "-"}</td>
+                                            <td style="color:${Number(a.current_balance ?? 0) > 0 ? '#f59e0b' : '#10b981'};">$${Number(a.current_balance ?? 0).toFixed(2)}</td>
+                                            <td>$${Number(a.credit_limit ?? 0).toFixed(2)}</td>
+                                            <td>${Math.round(Number(a.trust_score ?? 0) * 100)}%</td>
+                                            <td><span class="badge-gis">${a.status || "-"}</span></td>
                                         </tr>
                                     `).join("")}
                                 </tbody>
                             </table>
                         `;
                     }
+                })
+                .catch((err) => {
+                    console.error("Error fetching fiado data", err);
                 });
         }
     }
@@ -3237,7 +3274,10 @@
         const container = document.getElementById("remittances-list");
         if (!container) return;
         fetch("/api/economy/remittances")
-            .then((r) => r.json())
+            .then((r) => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            })
             .then((data) => {
                 const profiles = data.profiles || [];
                 if (profiles.length === 0) {
@@ -3246,21 +3286,32 @@
                 }
                 container.innerHTML = `
                     <table class="data-table">
-                        <thead><tr><th>Hogar Receptor</th><th>Emisor Diáspora</th><th>Mensual USD</th><th>Total Recibido</th><th>Gasto Alimentos</th><th>Ahorro</th></tr></thead>
+                        <thead><tr><th>Hogar Receptor</th><th>Emisor Diáspora</th><th>Mensual USD</th><th>Total Recibido</th><th>Fiabilidad</th><th>Calidad Vivienda</th></tr></thead>
                         <tbody>
-                            ${profiles.map((p) => `
+                            ${profiles.map((p) => {
+                                const relation = p.sender_relation ?? p.sender_relationship ?? "Familiar";
+                                const countrySuffix = p.sender_country ? ` (${p.sender_country})` : "";
+                                const monthlyUsd = Number(p.monthly_transfer_usd ?? 0);
+                                const lifetimeUsd = Number(p.lifetime_received_usd ?? p.total_lifetime_received_usd ?? 0);
+                                const reliabilityPct = Math.round(Number(p.reliability_index ?? p.allocation_basic_needs ?? 0) * 100);
+                                const housingPct = Math.round(Number(p.housing_quality_score ?? p.allocation_savings ?? 0) * 100);
+                                return `
                                 <tr>
-                                    <td><strong>${p.household_id}</strong></td>
-                                    <td>${p.sender_relationship} (${p.sender_country})</td>
-                                    <td style="color:#10b981;">+$${p.monthly_transfer_usd.toFixed(2)}</td>
-                                    <td>$${p.total_lifetime_received_usd.toFixed(2)}</td>
-                                    <td>${Math.round(p.allocation_basic_needs * 100)}%</td>
-                                    <td>${Math.round(p.allocation_savings * 100)}%</td>
+                                    <td><strong>${p.household_id || "-"}</strong></td>
+                                    <td>${relation}${countrySuffix}</td>
+                                    <td style="color:#10b981;">+$${monthlyUsd.toFixed(2)}</td>
+                                    <td>$${lifetimeUsd.toFixed(2)}</td>
+                                    <td>${reliabilityPct}%</td>
+                                    <td>${housingPct}%</td>
                                 </tr>
-                            `).join("")}
+                            `;
+                            }).join("")}
                         </tbody>
                     </table>
                 `;
+            })
+            .catch((err) => {
+                console.error("Error fetching remittances data", err);
             });
     }
 
@@ -6329,6 +6380,8 @@
 
     // Expose GIS utilities for testing and automated inspection
     window.showGISFeatureInspector = showGISFeatureInspector;
+    window.initOrResizeGIS25D = initOrResizeGIS25D;
+    window.switchView = switchView;
     window.saltborState = state;
 
 })();

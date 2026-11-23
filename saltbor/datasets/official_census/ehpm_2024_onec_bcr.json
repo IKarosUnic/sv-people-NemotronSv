@@ -1,0 +1,89 @@
+{
+  "dataset_id": "ehpm_2024_onec_bcr",
+  "title": "Encuesta de Hogares de Propósitos Múltiples (EHPM) 2023–2024 — El Salvador",
+  "source_institution": "Oficina Nacional de Estadísticas y Censos (ONEC) / Banco Central de Reserva (BCR)",
+  "source_url": "https://www.bcr.gob.sv",
+  "license": "Public Sector Information (LAIP El Salvador)",
+  "version": "2024.1",
+  "published_at": "2024-06-01",
+  "updated_at": "2024-11-01",
+  "reference_year": 2024,
+  "granularity_declared": [
+    "NATIONAL",
+    "URBAN_RURAL_STRATUM"
+  ],
+  "sub_district_granularity_available": false,
+  "limitations": [
+    "La EHPM tiene representatividad estadística nacional, departamental y por estrato urbano/rural; no es representativa a nivel de distrito, cantón o urbanización específica.",
+    "Los intervalos de ingreso y tasas de escolarización por nivel se usan como priors para microsimulación y Small Area Estimation con incertidumbre declarada."
+  ],
+  "national_indicators": {
+    "evidence_type": "PUBLIC_OFFICIAL",
+    "mean_schooling_years_6plus_2023": 7.3,
+    "mean_schooling_years_6plus_2024": 7.4,
+    "mean_schooling_years_urban": 8.3,
+    "mean_schooling_years_rural": 5.6,
+    "mean_household_income_monthly_usd_2023": 700.94,
+    "mean_household_income_monthly_usd_2024": 713.18,
+    "mean_per_capita_income_monthly_usd_2023": 223.32,
+    "mean_per_capita_income_monthly_usd_2024": 225.27,
+    "direct_labor_household_income_monthly_usd_2024": 458.06,
+    "poverty_persons_total_2024": 1809206,
+    "poverty_persons_extreme_2024": 610272,
+    "poverty_persons_relative_2024": 1198934,
+    "household_poverty_rate_2023": 0.272,
+    "school_attendance_4plus_persons": 1500000
+  },
+  "strata_priors": {
+    "urban": {
+      "evidence_type": "ESTIMATED_FROM_OFFICIAL",
+      "informal_employment_share": 0.62,
+      "formal_employment_share": 0.38,
+      "labor_participation_rate_16plus": 0.635,
+      "unemployment_rate": 0.052,
+      "mean_schooling_years": 8.3,
+      "mean_household_income_usd": 825.0,
+      "household_income_brackets_monthly_usd": {
+        "0_365": 0.21,
+        "365_600": 0.27,
+        "600_1000": 0.26,
+        "1000_1800": 0.17,
+        "1800_plus": 0.09
+      },
+      "school_attendance_rates_by_level": {
+        "parvularia_4_6": 0.66,
+        "basica_ciclo_1_7_9": 0.95,
+        "basica_ciclo_2_10_12": 0.94,
+        "basica_ciclo_3_13_15": 0.87,
+        "bachillerato_16_18": 0.69,
+        "superior_19_24": 0.24
+      },
+      "educational_lag_rate_school_age": 0.12
+    },
+    "rural": {
+      "evidence_type": "ESTIMATED_FROM_OFFICIAL",
+      "informal_employment_share": 0.78,
+      "formal_employment_share": 0.22,
+      "labor_participation_rate_16plus": 0.565,
+      "unemployment_rate": 0.059,
+      "mean_schooling_years": 5.6,
+      "mean_household_income_usd": 510.0,
+      "household_income_brackets_monthly_usd": {
+        "0_365": 0.42,
+        "365_600": 0.30,
+        "600_1000": 0.18,
+        "1000_1800": 0.08,
+        "1800_plus": 0.02
+      },
+      "school_attendance_rates_by_level": {
+        "parvularia_4_6": 0.52,
+        "basica_ciclo_1_7_9": 0.91,
+        "basica_ciclo_2_10_12": 0.88,
+        "basica_ciclo_3_13_15": 0.74,
+        "bachillerato_16_18": 0.47,
+        "superior_19_24": 0.09
+      },
+      "educational_lag_rate_school_age": 0.21
+    }
+  }
+}

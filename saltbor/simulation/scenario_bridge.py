@@ -188,9 +188,14 @@ class LiveScenarioBridge:
                 for est in ce.get_all_establishments():
                     est_prices = session.baseline_prices.setdefault(est.establishment_id, {})
                     for prod_id, prod in est.catalog.items():
+                        current_price = getattr(prod, "unit_price_usd", getattr(prod, "unit_price", 1.0))
                         if prod_id not in est_prices:
-                            est_prices[prod_id] = float(prod.unit_price)
-                        prod.unit_price = round(est_prices[prod_id] * multiplier, 2)
+                            est_prices[prod_id] = float(current_price)
+                        new_price = round(est_prices[prod_id] * multiplier, 2)
+                        if hasattr(prod, "unit_price_usd"):
+                            prod.unit_price_usd = new_price
+                        else:
+                            prod.unit_price = new_price
 
         session.audit_events.append({
             "tick": current_tick,
@@ -214,7 +219,11 @@ class LiveScenarioBridge:
                 saved = session.baseline_prices.get(est.establishment_id, {})
                 for prod_id, base_price in saved.items():
                     if prod_id in est.catalog:
-                        est.catalog[prod_id].unit_price = base_price
+                        prod = est.catalog[prod_id]
+                        if hasattr(prod, "unit_price_usd"):
+                            prod.unit_price_usd = base_price
+                        else:
+                            prod.unit_price = base_price
 
         session.audit_events.append({
             "tick": current_tick,

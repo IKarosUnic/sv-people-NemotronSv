@@ -9,7 +9,7 @@ from saltbor.persistence.database import DatabaseManager
 logger = logging.getLogger(__name__)
 
 # Current schema version — bump when making breaking changes.
-_SCHEMA_VERSION: int = 4
+_SCHEMA_VERSION: int = 5
 
 
 class SchemaManager:
@@ -423,6 +423,79 @@ class SchemaManager:
     )
     """
 
+    # Phase 1.16A Conversational Studio Persistence Tables
+    _TABLE_CONV_SESSIONS = """
+    CREATE TABLE IF NOT EXISTS conv_sessions (
+        conversation_id         TEXT PRIMARY KEY,
+        active_scenario_id      TEXT,
+        active_district_id      TEXT,
+        active_location_query   TEXT,
+        active_coordinates_json TEXT NOT NULL DEFAULT 'null',
+        active_intervention_json TEXT NOT NULL DEFAULT 'null',
+        active_temporal_json    TEXT NOT NULL DEFAULT 'null',
+        scenario_ids_json       TEXT NOT NULL DEFAULT '[]',
+        created_at              REAL NOT NULL,
+        updated_at              REAL NOT NULL
+    )
+    """
+
+    _TABLE_CONV_TURNS = """
+    CREATE TABLE IF NOT EXISTS conv_turns (
+        turn_id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        conversation_id TEXT NOT NULL,
+        turn_index      INTEGER NOT NULL,
+        role            TEXT NOT NULL,
+        message         TEXT NOT NULL,
+        timestamp       REAL NOT NULL,
+        stage           TEXT NOT NULL,
+        scenario_id     TEXT,
+        intent          TEXT,
+        FOREIGN KEY (conversation_id) REFERENCES conv_sessions(conversation_id) ON DELETE CASCADE
+    )
+    """
+
+    _TABLE_CONV_SCENARIOS = """
+    CREATE TABLE IF NOT EXISTS conv_scenarios (
+        scenario_id         TEXT PRIMARY KEY,
+        conversation_id     TEXT NOT NULL,
+        district_id         TEXT,
+        geo_context_json    TEXT NOT NULL DEFAULT '{}',
+        temporal_json       TEXT NOT NULL DEFAULT '{}',
+        intervention_json   TEXT NOT NULL DEFAULT '{}',
+        created_at          REAL NOT NULL,
+        FOREIGN KEY (conversation_id) REFERENCES conv_sessions(conversation_id) ON DELETE CASCADE
+    )
+    """
+
+    _TABLE_CONV_EXECUTIONS = """
+    CREATE TABLE IF NOT EXISTS conv_executions (
+        execution_id        TEXT PRIMARY KEY,
+        conversation_id     TEXT NOT NULL,
+        scenario_id         TEXT NOT NULL,
+        seed                INTEGER NOT NULL,
+        active_engines_json TEXT NOT NULL DEFAULT '[]',
+        evidence_ref_json   TEXT NOT NULL DEFAULT '{}',
+        analysis_json       TEXT NOT NULL DEFAULT '{}',
+        provenance_json     TEXT NOT NULL DEFAULT '{}',
+        checkpoint_id       TEXT,
+        created_at          REAL NOT NULL,
+        FOREIGN KEY (conversation_id) REFERENCES conv_sessions(conversation_id) ON DELETE CASCADE
+    )
+    """
+
+    _TABLE_CONV_CHECKPOINTS = """
+    CREATE TABLE IF NOT EXISTS conv_checkpoints (
+        checkpoint_id       TEXT PRIMARY KEY,
+        scenario_id         TEXT NOT NULL,
+        seed                INTEGER NOT NULL,
+        completed_steps     INTEGER NOT NULL,
+        total_steps         INTEGER NOT NULL,
+        simulated_days      REAL NOT NULL,
+        state_json          TEXT NOT NULL DEFAULT '{}',
+        created_at          REAL NOT NULL
+    )
+    """
+
     # ------------------------------------------------------------------
     # Indexes
     # ------------------------------------------------------------------
@@ -493,6 +566,11 @@ class SchemaManager:
             cls._TABLE_HOUSING_LEASES,
             cls._TABLE_COMMERCIAL_ESTABLISHMENTS,
             cls._TABLE_PSYCHOLOGY_TIMELINE,
+            cls._TABLE_CONV_SESSIONS,
+            cls._TABLE_CONV_TURNS,
+            cls._TABLE_CONV_SCENARIOS,
+            cls._TABLE_CONV_EXECUTIONS,
+            cls._TABLE_CONV_CHECKPOINTS,
         ):
             conn.execute(ddl)
 

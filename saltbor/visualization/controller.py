@@ -62,13 +62,20 @@ class SimulationController:
         config: Optional[SimulationConfig] = None,
         seed: Optional[int] = 42,
         db_path: str = "saltbor.db",
+        auto_initialize_benchmark: bool = True,
     ) -> None:
         self.config = config or SimulationConfig(
             random_seed=seed,
             database_path=Path(db_path),
         )
         self.seed = seed
-        self.scenario_name = "baseline"
+        self.scenario_name = "baseline" if auto_initialize_benchmark else "on_demand_idle"
+        self.historic_center_active: bool = bool(auto_initialize_benchmark)
+        self.active_territory: Optional[dict[str, Any]] = (
+            {"territory_scope": "San Salvador Centro Histórico", "district_id": "0614"}
+            if auto_initialize_benchmark
+            else None
+        )
 
         # Lock for mutating simulation state
         self._lock = threading.RLock()
@@ -102,8 +109,61 @@ class SimulationController:
         self.geo_engine = RealGeographicEngine(seed=seed)
         self.laboratory = SimulationLaboratory(config=self.config)
 
-        # Initialize engine
-        self._initialize_runner()
+        # Initialize runner only when explicitly requested (Historic Center is no longer server default)
+        if auto_initialize_benchmark:
+            self.config.territory_mode = "historic_center_benchmark"
+            self.config.territory_scope = "San Salvador Centro Histórico"
+            self.config.territory_district_id = "0614"
+            self.config.center_lat = 13.6989
+            self.config.center_lon = -89.1914
+            self._initialize_runner()
+
+    def activate_historic_center_benchmark(self, population_size: int = 20) -> dict[str, Any]:
+        """Explicitly activate the preserved Historic Center testing/benchmark scenario."""
+        with self._lock:
+            self.config.territory_mode = "historic_center_benchmark"
+            self.config.territory_scope = "San Salvador Centro Histórico"
+            self.config.territory_district_id = "0614"
+            self.config.center_lat = 13.6989
+            self.config.center_lon = -89.1914
+            self.config.initial_population_size = population_size
+            self.scenario_name = "historic_center_benchmark"
+            self.historic_center_active = True
+            self.active_territory = {
+                "territory_scope": "San Salvador Centro Histórico",
+                "district_id": "0614",
+                "lat": 13.6989,
+                "lon": -89.1914,
+            }
+            self._initialize_runner(load_existing=False)
+            return self.get_status_summary()
+
+    def activate_territory(
+        self,
+        territory_scope: str,
+        district_id: str,
+        lat: float,
+        lon: float,
+        population_size: int = 20,
+    ) -> dict[str, Any]:
+        """Explicitly activate a user-selected Salvadoran territory inside the SimulationRunner."""
+        with self._lock:
+            self.config.territory_mode = "on_demand"
+            self.config.territory_scope = territory_scope
+            self.config.territory_district_id = district_id
+            self.config.center_lat = lat
+            self.config.center_lon = lon
+            self.config.initial_population_size = population_size
+            self.scenario_name = f"territory_{district_id}"
+            self.historic_center_active = False
+            self.active_territory = {
+                "territory_scope": territory_scope,
+                "district_id": district_id,
+                "lat": lat,
+                "lon": lon,
+            }
+            self._initialize_runner(load_existing=False)
+            return self.get_status_summary()
 
     def _initialize_runner(self, load_existing: bool = False) -> None:
         """Create and initialize a fresh or restored SimulationRunner."""
@@ -210,6 +270,10 @@ class SimulationController:
             self._pause_event.wait()
             if self._stop_event.is_set():
                 break
+
+            if self.runner is None:
+                time.sleep(0.25)
+                continue
 
             t0 = time.perf_counter()
             tick = self.step_sync()
@@ -566,7 +630,28 @@ class SimulationController:
         """Return high-level real-time telemetry."""
         with self._lock:
             if self.runner is None:
-                return {"status": "uninitialized"}
+                return {
+                    "status": "IDLE_ON_DEMAND",
+                    "tick": 0,
+                    "day": 1,
+                    "hour": 6,
+                    "minute": 0,
+                    "time_string": "Day 1, 06:00",
+                    "is_daytime": True,
+                    "season": "epoca_seca",
+                    "is_running": False,
+                    "speed_multiplier": self._speed_multiplier,
+                    "real_fps": 0.0,
+                    "tick_latency_ms": 0.0,
+                    "active_population": 0,
+                    "scenario": self.scenario_name,
+                    "active_territory": self.active_territory,
+                    "historic_center_active": False,
+                    "historic_center_is_default": False,
+                    "random_seed": self.seed,
+                    "events_logged": 0,
+                    "phase": "IDLE",
+                }
             clock = self.runner.clock
             hour_int = clock.current_hour_int
             min_int = int((clock.current_hour - hour_int) * 60)
@@ -586,6 +671,9 @@ class SimulationController:
                 "tick_latency_ms": round(self.last_tick_duration_ms, 2),
                 "active_population": self.runner.population.count,
                 "scenario": self.scenario_name,
+                "active_territory": self.active_territory,
+                "historic_center_active": self.historic_center_active,
+                "historic_center_is_default": False,
                 "random_seed": self.seed,
                 "events_logged": len(self.recent_events),
                 "phase": self.runner.phase.value if hasattr(self.runner.phase, "value") else str(self.runner.phase),

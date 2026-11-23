@@ -261,6 +261,20 @@ class CommercialEngine:
             )
             cost = meal_product.unit_price_usd if meal_product else 2.00
 
+            if meal_product is not None and meal_product.current_stock < 1.0:
+                est.daily_browsers_without_purchase += 1
+                outcome = VisitOutcome(
+                    agent_uid=str(agent.uid),
+                    establishment_id=establishment_id,
+                    intent=intent,
+                    purchased=False,
+                    total_spent_usd=0.0,
+                    reasoning=f"Wanted to dine at {est.name} but '{meal_product.name}' is out of stock.",
+                    social_encounters=encounters,
+                )
+                self.visit_history.append(outcome)
+                return outcome
+
             if spending_limit < cost:
                 est.daily_browsers_without_purchase += 1
                 outcome = VisitOutcome(
@@ -275,7 +289,9 @@ class CommercialEngine:
                 self.visit_history.append(outcome)
                 return outcome
 
-            # Complete dining purchase
+            # Complete dining purchase and decrement inventory stock
+            if meal_product is not None:
+                meal_product.current_stock -= 1.0
             agent.physical_state.money = round(agent_money - cost, 2)
             est.cash_box_usd += cost
             est.daily_sales_volume_usd += cost

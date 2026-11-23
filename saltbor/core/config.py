@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings
@@ -27,7 +27,21 @@ class SimulationConfig(BaseSettings):
     ticks_per_year: float = Field(default=35040.0, description="Ticks per simulated year (365 days * 96 ticks/day).")
     start_hour: int = Field(default=6, description="Hour of day when simulation day begins.")
 
-    # --- World ---
+    # --- World & Territorial Mode (Phase 1.17 Location-Independent) ---
+    territory_mode: Literal["on_demand", "historic_center_benchmark"] = Field(
+        default="on_demand",
+        description="Operational territory mode ('on_demand' or explicit 'historic_center_benchmark').",
+    )
+    territory_scope: Optional[str] = Field(
+        default=None,
+        description="Explicit user-selected territorial scope name (never defaults to Historic Center).",
+    )
+    territory_district_id: Optional[str] = Field(
+        default=None,
+        description="Resolved D.L. 762 district_id for on-demand territorial initialization.",
+    )
+    center_lat: Optional[float] = Field(default=None, description="Explicit territorial center latitude (WGS84).")
+    center_lon: Optional[float] = Field(default=None, description="Explicit territorial center longitude (WGS84).")
     world_width: float = Field(default=500.0, description="World width in metres.")
     world_height: float = Field(default=500.0, description="World height in metres.")
 

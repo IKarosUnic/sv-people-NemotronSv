@@ -58,12 +58,33 @@ def create_app(
         allow_headers=["*"],
     )
 
-    # Initialize or bind controller
+    # Initialize or bind controller (location-independent IDLE mode by default; Historic Center never auto-boots)
     if controller is None:
-        controller = SimulationController(seed=seed, db_path=db_path)
+        controller = SimulationController(
+            seed=seed,
+            db_path=db_path,
+            auto_initialize_benchmark=False,
+        )
 
     app.state.controller = controller
     set_controller(controller)
+
+    # Ensure Conversational Studio uses a dedicated SQLite WAL database so
+    # SimulationController's live tick writer never locks Studio conversations.
+    from saltbor.conversational import SALTBORConversationalOrchestrator
+    from saltbor.visualization.routers.conversational_studio_router import (
+        _studio_orchestrator,
+        set_studio_orchestrator,
+    )
+    if _studio_orchestrator is None:
+        studio_db = (
+            ":memory:"
+            if db_path == ":memory:"
+            else str(Path(db_path).with_name(f"{Path(db_path).stem}_studio.db"))
+        )
+        set_studio_orchestrator(
+            SALTBORConversationalOrchestrator(persistence_path=studio_db, seed=seed or 42)
+        )
 
     # Mount API endpoints
     app.include_router(api_router)

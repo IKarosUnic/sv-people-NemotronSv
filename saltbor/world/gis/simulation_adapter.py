@@ -65,6 +65,13 @@ class SimulationGISAdapter:
             return {
                 "type": "FeatureCollection",
                 "name": "saltbor_simulation_layer_empty",
+                "metadata": {
+                    "tick": current_tick,
+                    "agent_count": 0,
+                    "layer_system": "SIMULATION_LAYER",
+                    "validation_state": "SIMULATED",
+                    "zone_id": None,
+                },
                 "features": []
             }
 

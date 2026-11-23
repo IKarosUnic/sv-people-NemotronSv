@@ -17,6 +17,7 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
+from saltbor.visualization.controller import SimulationController
 from saltbor.visualization.server import create_app
 from saltbor.world.gis import get_gis_engine, ValidationState
 
@@ -26,7 +27,9 @@ def client():
     import tempfile
     import time
     test_db = os.path.join(tempfile.gettempdir(), f"gis_test_{os.getpid()}_{time.time_ns()}.db")
-    app = create_app(db_path=test_db)
+    # Explicitly initialize the preserved Historic Center benchmark for pilot GIS coupling regression tests
+    controller = SimulationController(seed=42, db_path=test_db, auto_initialize_benchmark=True)
+    app = create_app(controller=controller, db_path=test_db)
     with TestClient(app) as c:
         yield c
     for ext in ("", "-wal", "-shm"):

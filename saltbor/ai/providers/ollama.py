@@ -38,20 +38,26 @@ class OllamaProvider(BaseAIProvider):
         self.timeout_seconds = timeout_seconds
         self._checked = False
         self._available = False
+        self._last_check_ts: float = 0.0
+        self._health_ttl_seconds: float = 10.0
 
     @property
     def provider_type(self) -> AIProviderType:
         return AIProviderType.LOCAL_OLLAMA
 
-    def is_available(self) -> bool:
+    def is_available(self, force_check: bool = False) -> bool:
+        now = time.monotonic()
+        if self._checked and not force_check and (now - self._last_check_ts) < self._health_ttl_seconds:
+            return self._available
         try:
-            tags_url = self.endpoint.replace("/generate", "/tags")
+            tags_url = self.endpoint.replace("/generate", "/tags").replace("http://localhost:", "http://127.0.0.1:")
             req = urllib.request.Request(tags_url)
-            with urllib.request.urlopen(req, timeout=1.0) as resp:
+            with urllib.request.urlopen(req, timeout=0.2) as resp:
                 self._available = (resp.status == 200)
         except Exception:
             self._available = False
         self._checked = True
+        self._last_check_ts = now
         return self._available
 
     def execute(self, request: AIRequest) -> AIResponse:

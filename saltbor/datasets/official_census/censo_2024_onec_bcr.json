@@ -1,0 +1,129 @@
+{
+  "dataset_id": "censo_2024_onec_bcr",
+  "title": "VII Censo de Población y VI de Vivienda 2024 — El Salvador",
+  "source_institution": "Oficina Nacional de Estadísticas y Censos (ONEC) / Banco Central de Reserva (BCR)",
+  "source_url": "https://censo2024.bcr.gob.sv",
+  "license": "Public Sector Information (LAIP El Salvador)",
+  "version": "2024.10.29",
+  "published_at": "2024-10-29",
+  "updated_at": "2024-10-29",
+  "reference_year": 2024,
+  "granularity_declared": [
+    "NATIONAL",
+    "DEPARTMENT",
+    "MUNICIPALITY_VERIFIED_SUBSET",
+    "DISTRICT_VERIFIED_SUBSET"
+  ],
+  "sub_district_granularity_available": false,
+  "unavailable_granularities": [
+    "CANTON",
+    "SECTOR_CENSAL",
+    "MANZANA"
+  ],
+  "limitations": [
+    "Las desagregaciones completas por cantón, sector censal y manzana no están contenidas en este paquete local; cuando se consulten, el sistema aplica Small Area Estimation (SAE) con incertidumbre explícita.",
+    "La pirámide quinquenal de edades y la distribución exacta por tamaño de hogar (1 a 7+) se calibran como ESTIMATED_FROM_OFFICIAL a partir de los parámetros oficiales publicados (edad mediana 24 años, índice de envejecimiento 49.0 y tamaño medio del hogar 3.1)."
+  ],
+  "national": {
+    "evidence_type": "PUBLIC_OFFICIAL",
+    "geographic_unit_id": "SV",
+    "geographic_unit_name": "El Salvador",
+    "total_population": 6029976,
+    "geographically_allocated_population": 5922921,
+    "institutional_unallocated_population": 107055,
+    "male_population": 2848527,
+    "female_population": 3181449,
+    "male_share": 0.472394,
+    "female_share": 0.527606,
+    "masculinity_index": 89.5,
+    "occupied_private_dwellings": 1841206,
+    "unoccupied_dwellings_share": 0.189,
+    "occasional_share_of_unoccupied": 0.471,
+    "vacant_abandoned_share_of_unoccupied": 0.529,
+    "mean_household_size": 3.1,
+    "female_headed_household_share": 0.45,
+    "homeownership_share": 0.654,
+    "median_age_years": 24.0,
+    "aging_index": 49.0
+  },
+  "departments": [
+    {"department_code": "SS", "name": "San Salvador", "total_population": 1563371, "evidence_type": "PUBLIC_OFFICIAL"},
+    {"department_code": "LL", "name": "La Libertad", "total_population": 765879, "evidence_type": "PUBLIC_OFFICIAL"},
+    {"department_code": "SA", "name": "Santa Ana", "total_population": 552938, "evidence_type": "PUBLIC_OFFICIAL"},
+    {"department_code": "SO", "name": "Sonsonate", "total_population": 470455, "evidence_type": "PUBLIC_OFFICIAL"},
+    {"department_code": "SM", "name": "San Miguel", "total_population": 447634, "evidence_type": "PUBLIC_OFFICIAL"},
+    {"department_code": "AH", "name": "Ahuachapán", "total_population": 348880, "evidence_type": "PUBLIC_OFFICIAL"},
+    {"department_code": "US", "name": "Usulután", "total_population": 325494, "evidence_type": "PUBLIC_OFFICIAL"},
+    {"department_code": "LP", "name": "La Paz", "total_population": 318374, "evidence_type": "PUBLIC_OFFICIAL"},
+    {"department_code": "CU", "name": "Cuscatlán", "total_population": 244901, "evidence_type": "PUBLIC_OFFICIAL"},
+    {"department_code": "LU", "name": "La Unión", "total_population": 224375, "evidence_type": "PUBLIC_OFFICIAL"},
+    {"department_code": "CH", "name": "Chalatenango", "total_population": 185930, "evidence_type": "PUBLIC_OFFICIAL"},
+    {"department_code": "MO", "name": "Morazán", "total_population": 169784, "evidence_type": "PUBLIC_OFFICIAL"},
+    {"department_code": "SV", "name": "San Vicente", "total_population": 161857, "evidence_type": "PUBLIC_OFFICIAL"},
+    {"department_code": "CA", "name": "Cabañas", "total_population": 143049, "evidence_type": "PUBLIC_OFFICIAL"}
+  ],
+  "municipalities_verified": [
+    {
+      "municipality_id": "ll_sur",
+      "name": "La Libertad Sur",
+      "department_code": "LL",
+      "total_population": 138237,
+      "evidence_type": "PUBLIC_OFFICIAL"
+    }
+  ],
+  "districts_verified": [
+    {
+      "district_id": "dist_santa_tecla",
+      "name": "Santa Tecla",
+      "municipality_id": "ll_sur",
+      "department_code": "LL",
+      "total_population": 125532,
+      "urban_share": 0.927,
+      "rural_share": 0.073,
+      "evidence_type": "PUBLIC_OFFICIAL"
+    },
+    {
+      "district_id": "dist_comasagua",
+      "name": "Comasagua",
+      "municipality_id": "ll_sur",
+      "department_code": "LL",
+      "total_population": 12705,
+      "evidence_type": "PUBLIC_OFFICIAL"
+    }
+  ],
+  "derived_demographic_priors": {
+    "evidence_type": "ESTIMATED_FROM_OFFICIAL",
+    "method": "Calibrated quinquennial distribution constrained to Censo 2024 median age (~24), aging index (49.0), and mean household size (3.1).",
+    "age_groups_quinquennial": {
+      "0-4": 0.068,
+      "5-9": 0.074,
+      "10-14": 0.081,
+      "15-19": 0.089,
+      "20-24": 0.092,
+      "25-29": 0.088,
+      "30-34": 0.082,
+      "35-39": 0.076,
+      "40-44": 0.070,
+      "45-49": 0.063,
+      "50-54": 0.056,
+      "55-59": 0.049,
+      "60-64": 0.043,
+      "65+": 0.109
+    },
+    "household_size_distribution": {
+      "1": 0.145,
+      "2": 0.220,
+      "3": 0.265,
+      "4": 0.205,
+      "5": 0.100,
+      "6": 0.045,
+      "7+": 0.020
+    },
+    "household_type_distribution": {
+      "nuclear": 0.56,
+      "extended": 0.24,
+      "single_parent": 0.14,
+      "unipersonal": 0.06
+    }
+  }
+}

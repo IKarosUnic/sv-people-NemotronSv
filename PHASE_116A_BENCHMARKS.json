@@ -1,0 +1,339 @@
+{
+  "experiments": {
+    "EXP_116A_01": {
+      "name": "National Geographic Resolution",
+      "success": true,
+      "duration_seconds": 4.3724,
+      "summary": "National resolution verified across 14 departments, cantones, ambiguity handling, and OSM coords.",
+      "hypotheses": [
+        {
+          "statement": "All 14 departments resolve accurately to D.L. 762 records",
+          "confirmed": true
+        },
+        {
+          "statement": "Cantón San José Las Flores resolves with rural hazard profile",
+          "confirmed": true
+        },
+        {
+          "statement": "Ambiguous place names return ranked candidates rather than guessing",
+          "confirmed": true
+        },
+        {
+          "statement": "Optional map coordinates retrieve OSM roads, POIs, and ODbL provenance",
+          "confirmed": true
+        }
+      ],
+      "metrics": {
+        "departments_resolved": 14,
+        "ambiguous_candidates_el_rosario": 3,
+        "ss_centro_roads_in_radius": 600
+      }
+    },
+    "EXP_116A_02": {
+      "name": "Conversational Business Creation",
+      "success": true,
+      "duration_seconds": 1.2807,
+      "summary": "Pupusería simulated in Santa Tecla: visitors=7945.1, buyers=3656.2, ledger_diff=$0.00.",
+      "hypotheses": [
+        {
+          "statement": "Follow-up preserves Santa Tecla location and business entity",
+          "confirmed": true
+        },
+        {
+          "statement": "Follow-up increments workforce count by +2 accurately",
+          "confirmed": true
+        },
+        {
+          "statement": "CommercialEngine exhibits non-automatic visitor conversion (browsers > 0)",
+          "confirmed": true
+        },
+        {
+          "statement": "VerifiableEconomicLedger preserves $0.00 discrepancy",
+          "confirmed": true
+        }
+      ],
+      "metrics": {
+        "visitors": 7945.1,
+        "browsers_without_purchase": 4289.0,
+        "purchasers": 3656.2,
+        "revenue_usd": 3290.5,
+        "net_profit_usd": 1386.56
+      }
+    },
+    "EXP_116A_03": {
+      "name": "School Demand Assessment",
+      "success": true,
+      "duration_seconds": 1.42,
+      "summary": "School assessment completed: attendance=1.0, dropout_risk=0.0886.",
+      "hypotheses": [
+        {
+          "statement": "School intervention designed for Cantón San José Las Flores",
+          "confirmed": true
+        },
+        {
+          "statement": "School attendance and dropout risk metrics computed from cohort and constraints",
+          "confirmed": true
+        },
+        {
+          "statement": "School construction compared against school transport alternative",
+          "confirmed": true
+        }
+      ],
+      "metrics": {
+        "school_attendance_rate": 1.0,
+        "school_dropout_risk": 0.0886,
+        "recommended_alternative": "alternativa_transporte_escolar"
+      }
+    },
+    "EXP_116A_04": {
+      "name": "Synthetic Population Evidence Extraction",
+      "success": true,
+      "duration_seconds": 1.2416,
+      "summary": "Extracted 18 provenance-tagged indicators and 3 clustered opinions.",
+      "hypotheses": [
+        {
+          "statement": "All indicators include complete engine/seed/scope provenance",
+          "confirmed": true
+        },
+        {
+          "statement": "Missing geospatial/OSM data gaps exposed explicitly",
+          "confirmed": true
+        },
+        {
+          "statement": "Synthetic opinions grounded in state and marked non-independent",
+          "confirmed": true
+        }
+      ],
+      "metrics": {
+        "indicators_count": 18,
+        "missing_indicators_count": 2,
+        "opinions_count": 3
+      }
+    },
+    "EXP_116A_05": {
+      "name": "Temporal Horizon Comparison",
+      "success": true,
+      "duration_seconds": 1.6419,
+      "summary": "Horizons 7d/30d/180d/365d revenues: {7: 2340.77, 30: 11400.77, 180: 50292.75, 365: 89355.74}",
+      "hypotheses": [
+        {
+          "statement": "All four Spanish temporal horizons parsed and simulated",
+          "confirmed": true
+        },
+        {
+          "statement": "Cumulative simulated revenue scales monotonically with temporal horizon",
+          "confirmed": true
+        }
+      ],
+      "metrics": {
+        "7": 2340.77,
+        "30": 11400.77,
+        "180": 50292.75,
+        "365": 89355.74
+      }
+    },
+    "EXP_116A_06": {
+      "name": "Population Activation and Deactivation",
+      "success": true,
+      "duration_seconds": 0.2673,
+      "summary": "Selective regional activation/deactivation verified across Santa Tecla and San Miguel.",
+      "hypotheses": [
+        {
+          "statement": "Deactivation frees active RAM cleanly",
+          "confirmed": true
+        },
+        {
+          "statement": "Selective activation hydrates target district without loading entire nation",
+          "confirmed": true
+        },
+        {
+          "statement": "Re-activation restores persistent human identities and state without duplication",
+          "confirmed": true
+        }
+      ],
+      "metrics": {
+        "total_unique_persistent": 60
+      }
+    },
+    "EXP_116A_07": {
+      "name": "Commuter and Visitor Flows",
+      "success": true,
+      "duration_seconds": 0.2877,
+      "summary": "Santa Tecla <-> San Salvador commuter & visitor flow verified with zero double-counting.",
+      "hypotheses": [
+        {
+          "statement": "National unique UID count remains strictly invariant during flows",
+          "confirmed": true
+        },
+        {
+          "statement": "Outbound and inbound commuter counts balance exactly",
+          "confirmed": true
+        },
+        {
+          "statement": "Sum of individuals physically present across districts equals unique total",
+          "confirmed": true
+        },
+        {
+          "statement": "Anti-double-counting check passes",
+          "confirmed": true
+        }
+      ],
+      "metrics": {
+        "st_present": 16,
+        "ss_present": 44,
+        "national_unique": 60
+      }
+    },
+    "EXP_116A_08": {
+      "name": "Gemini Evidence Interpretation",
+      "success": true,
+      "duration_seconds": 1.5938,
+      "summary": "Gemini evidence interpretation completed (CONDITIONALLY_PROMISING).",
+      "hypotheses": [
+        {
+          "statement": "Gemini provider executes structured analysis over Stage B evidence",
+          "confirmed": true
+        },
+        {
+          "statement": "Verdict conforms strictly to AnalyticalVerdict enum",
+          "confirmed": true
+        },
+        {
+          "statement": "Supporting evidence retains simulated provenance indicators",
+          "confirmed": true
+        }
+      ],
+      "metrics": {
+        "provider": "REMOTE_GEMINI",
+        "verdict": "CONDITIONALLY_PROMISING"
+      }
+    },
+    "EXP_116A_09": {
+      "name": "Alternative Intervention Comparison",
+      "success": true,
+      "duration_seconds": 0.3881,
+      "summary": "Recommended alternative: propuesta_school.",
+      "hypotheses": [
+        {
+          "statement": "Multi-seed paired runs executed across baseline and alternatives",
+          "confirmed": true
+        },
+        {
+          "statement": "Paired deltas and recommended alternative computed",
+          "confirmed": true
+        },
+        {
+          "statement": "Multi-scale territorial views populated",
+          "confirmed": true
+        }
+      ],
+      "metrics": {
+        "recommended": "propuesta_school",
+        "paired_deltas": {
+          "propuesta_school": {
+            "household_avg_cash_usd": 0.0,
+            "school_attendance_rate": 0.1346,
+            "school_dropout_risk": -0.0404,
+            "edu_unmet_person_days": -210.0,
+            "hlt_unmet_person_days": 0.0,
+            "commercial_revenue_usd": 0.0,
+            "commercial_net_profit_usd": 0.0,
+            "wealth_gini_simulated": 0.0,
+            "accessibility_index": 0.0
+          },
+          "alternativa_transporte_escolar": {
+            "household_avg_cash_usd": 0.0,
+            "school_attendance_rate": 0.0,
+            "school_dropout_risk": -0.1079,
+            "edu_unmet_person_days": 0.0,
+            "hlt_unmet_person_days": 0.0,
+            "commercial_revenue_usd": 0.0,
+            "commercial_net_profit_usd": 0.0,
+            "wealth_gini_simulated": 0.0,
+            "accessibility_index": 0.0
+          }
+        }
+      }
+    },
+    "EXP_116A_10": {
+      "name": "One-Year Simulation",
+      "success": true,
+      "duration_seconds": 2.3306,
+      "summary": "365-day run completed in 0.0071s (revenue=$129332.64).",
+      "hypotheses": [
+        {
+          "statement": "365-day horizon simulates 35,040 equivalent ticks via hybrid seasonal sampling",
+          "confirmed": true
+        },
+        {
+          "statement": "SQLite WAL checkpoint persisted cleanly",
+          "confirmed": true
+        },
+        {
+          "statement": "Deterministic seed reproducibility and <3s execution achieved",
+          "confirmed": true
+        }
+      ],
+      "metrics": {
+        "wall_clock_seconds": 0.0071,
+        "revenue_usd": 129332.64
+      }
+    },
+    "EXP_116A_11": {
+      "name": "Offline Simulation",
+      "success": true,
+      "duration_seconds": 0.4693,
+      "summary": "100% offline headless simulation verified.",
+      "hypotheses": [
+        {
+          "statement": "System falls back seamlessly to OFFLINE_DETERMINISTIC",
+          "confirmed": true
+        },
+        {
+          "statement": "Headless simulation completes with map hidden and $0.00 ledger diff",
+          "confirmed": true
+        }
+      ],
+      "metrics": {
+        "provider": "OFFLINE_DETERMINISTIC",
+        "verdict": "CONDITIONALLY_PROMISING"
+      }
+    },
+    "EXP_116A_12": {
+      "name": "Sustained Performance Benchmark",
+      "success": true,
+      "duration_seconds": 4.7603,
+      "summary": "12 sustained Stage A+B runs in 4.76s (avg=393.98ms/run, ms/segment=98.50ms, RSS=106.0MB).",
+      "hypotheses": [
+        {
+          "statement": "Mean end-to-end Stage A+B latency under 500ms",
+          "confirmed": true
+        },
+        {
+          "statement": "12 sustained multi-district simulations completed under 10s budget",
+          "confirmed": true
+        }
+      ],
+      "metrics": {
+        "runs": 12,
+        "wall_clock_seconds": 4.7603,
+        "cpu_seconds": 3.5312,
+        "avg_latency_ms": 393.98,
+        "max_latency_ms": 1335.26,
+        "ms_per_segment": 98.5,
+        "total_segments": 48,
+        "rss_before_mb": 90.62,
+        "rss_after_mb": 106.03,
+        "tracemalloc_peak_mb": 11.94,
+        "active_agents_peak": 288,
+        "active_engines": [
+          "BusinessEnterprise",
+          "CommercialEngine",
+          "LaborMarketEngine",
+          "PopulationRegistry",
+          "VerifiableEconomicLedger"
+        ]
+      }
+    }
+  }
+}

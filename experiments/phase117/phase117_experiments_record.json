@@ -1,0 +1,1060 @@
+{
+  "phase": "1.17",
+  "seed": 42,
+  "total_experiments": 20,
+  "passed_count": 20,
+  "all_passed": true,
+  "experiments": [
+    {
+      "experiment_id": "EXP_117_A",
+      "title": "Historic Center is no longer the default simulation location",
+      "research_question": "Does SALTBOR boot into an IDLE location-independent state without pre-loading San Salvador Historic Center?",
+      "hypothesis": "Default server and OnDemand engine states remain IDLE with active_territory=None and 0 Historic Center agents.",
+      "initial_conditions": {
+        "seed": 42,
+        "db_path": ":memory:"
+      },
+      "geographic_context": "National / Location-Independent",
+      "data_sources": [
+        "SALTBOR runtime state"
+      ],
+      "methodology": "Instantiate OnDemandTerritorialSimulationEngine and FastAPI create_app() and inspect initial status.",
+      "seed": 42,
+      "results": {
+        "engine_status": {
+          "state": "IDLE",
+          "active_territory": null,
+          "historic_center_is_default": false,
+          "total_scenarios": 0,
+          "persistent_unique_individuals": 0,
+          "rtree_indexed": true,
+          "scenario_ids": []
+        },
+        "controller_status": {
+          "status": "IDLE_ON_DEMAND",
+          "tick": 0,
+          "day": 1,
+          "hour": 6,
+          "minute": 0,
+          "time_string": "Day 1, 06:00",
+          "is_daytime": true,
+          "season": "epoca_seca",
+          "is_running": false,
+          "speed_multiplier": 1,
+          "real_fps": 0.0,
+          "tick_latency_ms": 0.0,
+          "active_population": 0,
+          "scenario": "on_demand_idle",
+          "active_territory": null,
+          "historic_center_active": false,
+          "historic_center_is_default": false,
+          "random_seed": 42,
+          "events_logged": 0,
+          "phase": "IDLE"
+        }
+      },
+      "limitations": [
+        "Direct unit test constructors of SimulationController keep auto_initialize_benchmark=True for legacy test compatibility."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/territorial_intelligence/on_demand_engine.py:OnDemandTerritorialSimulationEngine.get_status",
+          "saltbor/visualization/server.py:create_app"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "OnDemandTerritorialSimulationEngine",
+          "create_app",
+          "SimulationController"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_B",
+      "title": "Location resolution across distinct Salvadoran departments",
+      "research_question": "Can SALTBOR resolve places across West, Central, Paracentral, and East while requesting clarification on ambiguity?",
+      "hypothesis": "All 4 target departments resolve accurately, ambiguous 'El Rosario' requests clarification, and out-of-country coordinates fail cleanly.",
+      "initial_conditions": {
+        "queries": [
+          "Santa Ana",
+          "Soyapango",
+          "San Vicente",
+          "San Miguel",
+          "El Rosario",
+          "(40.71, -74.0)"
+        ]
+      },
+      "geographic_context": "4 Departments (SA, SS, SV, SM)",
+      "data_sources": [
+        "D.L. 762 Catalog",
+        "Geofabrik OSM El Salvador"
+      ],
+      "methodology": "Resolve multi-department names, ambiguous district names, and non-Salvadoran coordinates.",
+      "seed": 42,
+      "results": {
+        "resolved": {
+          "Santa Ana": {
+            "resolved": true,
+            "district_id": "dist_santa_ana",
+            "department": "Santa Ana"
+          },
+          "Soyapango": {
+            "resolved": true,
+            "district_id": "dist_soyapango",
+            "department": "San Salvador"
+          },
+          "San Vicente": {
+            "resolved": true,
+            "district_id": "dist_san_vicente",
+            "department": "San Vicente"
+          },
+          "San Miguel": {
+            "resolved": true,
+            "district_id": "dist_san_miguel",
+            "department": "San Miguel"
+          }
+        },
+        "ambiguous_candidates": 3,
+        "outside_resolved": false
+      },
+      "limitations": [
+        "Exact street-level geocoding depends on OSM name completeness."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/conversational/territorial_context.py:NationalTerritorialContextEngine.resolve_location"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "NationalTerritorialContextEngine"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_C",
+      "title": "Building and land-use context retrieval outside Historic Center",
+      "research_question": "Does Soyapango return real OSM building footprints, areas, classification origins, and land use without inventing occupancy or floors?",
+      "hypothesis": "Soyapango yields >500 real OSM buildings with computed surface areas, non-fabricated height_m=None, and road/landuse coverage.",
+      "initial_conditions": {
+        "location": "Soyapango",
+        "radius_km": 1.2
+      },
+      "geographic_context": "Soyapango, San Salvador Este",
+      "data_sources": [
+        "Geofabrik OSM buildings/landuse/roads (ODbL-1.0)"
+      ],
+      "methodology": "Run NationalBuildingIntelligenceEngine and TerritorialLandUseIntelligenceEngine on Soyapango centroid.",
+      "seed": 42,
+      "results": {
+        "total_buildings": 2422,
+        "total_surface_area_m2": 286497.5,
+        "counts_by_use": {
+          "commercial": 127,
+          "industrial": 84,
+          "residential": 412,
+          "unknown": 123,
+          "institutional": 12,
+          "health": 23,
+          "educational": 17,
+          "religious": 1,
+          "recreational": 1
+        },
+        "counts_by_origin": {
+          "INFERRED": 147,
+          "SOURCE_PROVIDED": 518,
+          "UNKNOWN": 123,
+          "OBSERVED": 12
+        },
+        "land_use_counts": {
+          "vegetation": 80,
+          "forest": 39,
+          "recreation_area": 28,
+          "industrial_area": 12,
+          "commercial_area": 10,
+          "residential_area": 8,
+          "institutional_area": 2
+        },
+        "road_segments": 1754
+      },
+      "limitations": [
+        "Las alturas y número de niveles no están incluidos en el shapefile Geofabrik estándar (height_m=None, levels=None).",
+        "La ocupación real de viviendas o locales comerciales no se infiere de la huella poligonal.",
+        "Se observaron 2422 edificaciones en el área; el detalle geométrico se procesó sobre una muestra de 800."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/territorial_intelligence/building_and_landuse.py:NationalBuildingIntelligenceEngine.analyze_buildings"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "NationalBuildingIntelligenceEngine",
+          "TerritorialLandUseIntelligenceEngine"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_D",
+      "title": "Commercial establishment identification and provenance",
+      "research_question": "Are commercial establishments grounded in real OSM POIs/P8 records while keeping unverified commercial buildings separate?",
+      "hypothesis": "Soyapango returns real non-synthetic establishments with ODbL provenance, diversity index, and explicit unverified commercial buildings.",
+      "initial_conditions": {
+        "location": "Soyapango",
+        "radius_km": 1.5
+      },
+      "geographic_context": "Soyapango, San Salvador",
+      "data_sources": [
+        "OSM pois & pois_a",
+        "SALVADORAN_ESTABLISHMENTS_P8"
+      ],
+      "methodology": "Run TerritorialEconomicContextEngine cross-referencing POI polygons/points with commercial buildings.",
+      "seed": 42,
+      "results": {
+        "confirmed_establishments": 301,
+        "unverified_commercial_buildings": 3,
+        "density_per_km2": 42.58,
+        "diversity_shannon": 0.817,
+        "category_counts": {
+          "pupuseria": 5,
+          "shop": 80,
+          "pharmacy": 21,
+          "service_business": 24,
+          "restaurant": 48,
+          "warehouse": 27,
+          "supermarket": 8,
+          "office": 7,
+          "commercial_center": 4,
+          "market": 4,
+          "factory": 73
+        }
+      },
+      "limitations": [
+        "OSM registra establecimientos mapeados por contribuyentes; negocios pequeños e informales suelen estar subrepresentados.",
+        "Los edificios marcados como 'unverified_commercial_building' tienen uso edilicio comercial sin comercio confirmado."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/territorial_intelligence/commercial_intelligence.py:CommercialActivityIntelligenceEngine.discover_commercial_activity"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "CommercialActivityIntelligenceEngine",
+          "BusinessDistributionEngine"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_E",
+      "title": "Adaptive catchment areas by service type",
+      "research_question": "Does TerritorialCatchmentAnalysisEngine adapt spatial scale and network routing to the service question?",
+      "hypothesis": "Hospital regional travel-time catchment substantially exceeds neighborhood walking catchment for a pupusería.",
+      "initial_conditions": {
+        "location": "Soyapango",
+        "services": [
+          "pupuseria",
+          "hospital"
+        ]
+      },
+      "geographic_context": "Soyapango road network",
+      "data_sources": [
+        "OSM roads network",
+        "Hydrology barriers",
+        "Tobler slope"
+      ],
+      "methodology": "Compare CatchmentAreaResult across pupuseria vs hospital.",
+      "seed": 42,
+      "results": {
+        "pupuseria": {
+          "scale": "NEIGHBORHOOD",
+          "method": "WALKING_NETWORK_DISTANCE",
+          "area_km2": 1.638,
+          "circuity": 1.434,
+          "nodes": 7155
+        },
+        "hospital": {
+          "scale": "REGIONAL",
+          "method": "TRAVEL_TIME_ACCESSIBILITY",
+          "area_km2": 148.552,
+          "circuity": 1.26,
+          "nodes": 9481
+        }
+      },
+      "limitations": [
+        "Las redes viales OSM no incluyen frecuencias ni rutas de buses en tiempo real."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/territorial_intelligence/catchment.py:TerritorialCatchmentAnalysisEngine.analyze_catchment"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "TerritorialCatchmentAnalysisEngine",
+          "OSMRoadNetwork"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_F",
+      "title": "Resident versus temporary population differentiation without double counting",
+      "research_question": "Does mobility accounting keep unique individuals constant without double-counting and avoid uniform schedules?",
+      "hypothesis": "Total role counts match unique hydrated individuals exactly and exhibit positive schedule entropy.",
+      "initial_conditions": {
+        "active_humans": 40,
+        "inbound_commuters": 6
+      },
+      "geographic_context": "Soyapango + San Salvador commuters",
+      "data_sources": [
+        "NationalPopulationActivationManager",
+        "HumanMobilityFlowEngine"
+      ],
+      "methodology": "Compute role breakdown and schedule heterogeneity entropy across 5 diurnal slots.",
+      "seed": 42,
+      "results": {
+        "role_breakdown": {
+          "WORKER": 21,
+          "STUDENT": 14,
+          "SERVICE_SEEKER": 5
+        },
+        "sum_roles": 40,
+        "entropy": 0.895
+      },
+      "limitations": [
+        "No existen conteos peatonales censados en tiempo real; las cifras son estimaciones estadísticas/GIS y resultados de agentes sintéticos, nunca mediciones observadas en calle."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/territorial_intelligence/mobility_flow.py:HumanMobilityFlowEngine.analyze_mobility"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "HumanMobilityFlowEngine"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_G",
+      "title": "Commuting and diurnal mobility flow analysis",
+      "research_question": "Do weekday morning vs weekend night periods alter pedestrian activity indices and expose real OSM corridors without claiming street sensor counts?",
+      "hypothesis": "Weekday morning index exceeds weekend night, real corridors and OD gravity patterns appear, and measured_flows_available=False.",
+      "initial_conditions": {
+        "periods": [
+          "WEEKDAY_MORNING",
+          "WEEKEND_NIGHT"
+        ]
+      },
+      "geographic_context": "Soyapango",
+      "data_sources": [
+        "OSM roads & transport",
+        "D.L. 762 gravity model"
+      ],
+      "methodology": "Compare weekday morning vs weekend night mobility reports.",
+      "seed": 42,
+      "results": {
+        "weekday_morning_index": 0.919,
+        "weekend_night_index": 0.14,
+        "corridors_count": 10,
+        "top_corridor": "Vía trunk",
+        "measured_flows_available": false
+      },
+      "limitations": [
+        "No existen conteos peatonales censados en tiempo real; las cifras son estimaciones estadísticas/GIS y resultados de agentes sintéticos, nunca mediciones observadas en calle."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/territorial_intelligence/mobility_flow.py:HumanMobilityFlowEngine._extract_mobility_corridors"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "HumanMobilityFlowEngine",
+          "PopulationFlowEvidenceEngine"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_H",
+      "title": "Employment opportunity analysis with explicit 5-tier provenance",
+      "research_question": "Does SALTBOR distinguish verified vacancies (none connected) from known employers and sectoral estimates?",
+      "hypothesis": "verified_job_vacancies remains empty while known employers and spatial mismatch are derived honestly.",
+      "initial_conditions": {
+        "location": "Soyapango"
+      },
+      "geographic_context": "Soyapango",
+      "data_sources": [
+        "OSM Commercial POIs",
+        "EHPM Sectoral Priors",
+        "D.L. 762 Labor Supply"
+      ],
+      "methodology": "Run TerritorialLaborMarketEngine on Soyapango commercial and demographic context.",
+      "seed": 42,
+      "results": {
+        "verified_vacancies": 0,
+        "known_employers": 60,
+        "labor_supply": 162400,
+        "mismatch_index": 0.43
+      },
+      "limitations": [
+        "SALTBOR no está conectado a bolsas de empleo activas en vivo: verified_job_vacancies=[] (0 vacantes verificadas).",
+        "La presencia de un establecimiento en OSM no confirma el número exacto de empleados contratados ni vacantes abiertas."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/territorial_intelligence/employment.py:TerritorialLaborMarketEngine.analyze_labor_market"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "TerritorialLaborMarketEngine"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_I",
+      "title": "Residential population distribution outside Historic Center",
+      "research_question": "Are activated synthetic households geographically anchored around the user-selected location (San Miguel) rather than Historic Center?",
+      "hypothesis": "All 35 hydrated San Miguel humans register inside San Miguel coordinates via SpatialGridIndex.",
+      "initial_conditions": {
+        "location": "San Miguel",
+        "agents": 35
+      },
+      "geographic_context": "San Miguel (Eastern El Salvador)",
+      "data_sources": [
+        "OSM Buildings/Landuse",
+        "SpatialGridIndex"
+      ],
+      "methodology": "Activate San Miguel population and query spatial index around San Miguel centroid.",
+      "seed": 42,
+      "results": {
+        "hydrated": 35,
+        "osm_anchors_used": 9,
+        "spatial_hits_in_3km": 35,
+        "sample_coord": [
+          13.483177,
+          -88.186539
+        ]
+      },
+      "limitations": [
+        "Household-to-building link is SYNTHETIC_RESIDENTIAL_ASSIGNMENT, not census address matching."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/territorial_intelligence/population_distribution.py:DynamicPopulationDistributionEngine.activate_for_territory"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "DynamicPopulationDistributionEngine",
+          "SpatialGridIndex"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_J",
+      "title": "Scenario activation without population reset",
+      "research_question": "Does launching a new scenario in Santa Ana preserve existing Soyapango persistent identities and balances?",
+      "hypothesis": "Total unique persistent population grows/stays intact and modified Soyapango agent balance (777.77) persists.",
+      "initial_conditions": {
+        "prior_location": "Soyapango",
+        "new_location": "Santa Ana"
+      },
+      "geographic_context": "Cross-city persistence (SS -> SA)",
+      "data_sources": [
+        "NationalPopulationActivationManager"
+      ],
+      "methodology": "Modify Soyapango human wealth, execute Santa Ana scenario, and inspect preserved Soyapango identity.",
+      "seed": 42,
+      "results": {
+        "total_before": 95,
+        "total_after": 135,
+        "preserved_money": 777.77
+      },
+      "limitations": [
+        "Cross-process persistence uses SQLite WAL persistent_population_assignments."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/territorial_intelligence/population_distribution.py"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "DynamicPopulationDistributionEngine",
+          "NationalPopulationActivationManager"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_K",
+      "title": "Honest missing geographic data handling",
+      "research_question": "Does SALTBOR run preliminary analysis with explicit gap disclosure when rural OSM layers are incomplete?",
+      "hypothesis": "Rural cantón discloses missing OSM layers and partial/poor coverage tier without fabricating features.",
+      "initial_conditions": {
+        "rural_query": "Cantón San José Las Flores",
+        "strict_query": "Perquín"
+      },
+      "geographic_context": "San Vicente Sur / Morazán",
+      "data_sources": [
+        "D.L. 762",
+        "NationalTerritorialCoverageRegistry"
+      ],
+      "methodology": "Execute rural scenario and verify coverage tier and missing_information lists.",
+      "seed": 42,
+      "results": {
+        "rural_state": "COMPLETED",
+        "rural_tier": "PARTIAL",
+        "missing_count": 2,
+        "strict_state": "COMPLETED"
+      },
+      "limitations": [
+        "Sin paradas o terminales de transporte público etiquetadas en OSM.",
+        "Sin conteo censal origen-destino ni bolsas de empleo en vivo."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/territorial_intelligence/coverage.py:NationalTerritorialCoverageRegistry"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "NationalTerritorialCoverageRegistry"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_L",
+      "title": "Real versus synthetic data differentiation (A–G)",
+      "research_question": "Does TerritorialEvidencePackage strictly isolate real OSM observations, official priors, derivations, and simulated outcomes?",
+      "hypothesis": "All 7 epistemic tiers A–G are populated independently and street sensor flows remain explicitly None.",
+      "initial_conditions": {
+        "scenario_id": "SCEN_117_c8cd7d83"
+      },
+      "geographic_context": "Soyapango",
+      "data_sources": [
+        "TerritorialEvidenceEngine"
+      ],
+      "methodology": "Inspect A–G buckets in TerritorialEvidencePackage.",
+      "seed": 42,
+      "results": {
+        "counts": {
+          "A": 5,
+          "B": 3,
+          "C": 6,
+          "D": 4,
+          "E": 16,
+          "F": 9,
+          "G": 2
+        },
+        "measured_sensor_value": null
+      },
+      "limitations": [
+        "Evidencia producida por agentes sintéticos y motores de SALTBOR (SYNTHETIC_SIMULATED), no encuestas empíricas reales.",
+        "Opiniones sintéticas agrupadas comparten entorno y supuestos del escenario; no deben sumarse como muestras estadísticas independientes.",
+        "Sin conteo censal origen-destino ni bolsas de empleo en vivo.",
+        "Las alturas y número de niveles no están incluidos en el shapefile Geofabrik estándar (height_m=None, levels=None)."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/territorial_intelligence/evidence.py:TerritorialEvidenceEngine.build_evidence_package"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "TerritorialEvidenceEngine",
+          "TerritorialEvidencePackage"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_M",
+      "title": "Evidence-grounded AI interpretation",
+      "research_question": "Does GeminiDecisionAnalyst interpret A–G evidence without inventing unsupported statistics?",
+      "hypothesis": "Narrative passes verify_narrative_grounding() with zero unmatched fabricated metrics.",
+      "initial_conditions": {
+        "provider": "OFFLINE_DETERMINISTIC"
+      },
+      "geographic_context": "Soyapango",
+      "data_sources": [
+        "TerritorialEvidencePackage",
+        "AIModelRouter"
+      ],
+      "methodology": "Run analyze_evidence_package() and verify numeric grounding.",
+      "seed": 42,
+      "results": {
+        "provider_used": "OFFLINE_DETERMINISTIC",
+        "model_used": "SALTBOR-Offline-Deterministic-v1",
+        "narrative": "Evaluación para 'Establecimiento Comercial (Soyapango)' en Soyapango (dist_soyapango), San Salvador (30 días, semilla 42): clasificación analítica PROMISING. Se activaron 40 agentes sintéticos con conservación contable exacta (84 transacciones, diferencia $0.00). El establecimiento simulado registró 12150 visitas, 3375 compras y un resultado neto de $2674.75 USD. Cohorte activa simulada: 40 agentes únicos en Soyapango (dist_soyapango), San Salvador durante 30 días. Liquidez promedio observada: $31.70 USD (proporción con <$15: 37.5%, Gini simulado: 0.481). Índice de accesibilidad territorial: 0.994; ingresos laborales acumulados: $187.50 USD. Dinámica comercial: 12150 visitas totales, 3375 compras (27.8% conversión) y 8775 visitantes que solo exploraron sin comprar. Cambios en precios unitarios, horarios o estructura de personal pueden invertir la rentabilidad observada. Factores locales no capturados en OSM (competencia informal no mapeada, preferencia vecinal o seguridad) pueden alterar la demanda real. Las oportunidades de autoempleo y microempresa de servicios/alimentos responden a la densidad residencial y flujo peatonal en corredores. La presencia de múltiples nodos comerciales y productivos sugiere demanda complementaria en logística, mantenimiento, ventas y servicios.",
+        "grounding_audit": {
+          "grounded": true,
+          "numbers_checked": 20,
+          "unmatched_numbers": []
+        },
+        "context_district": "Soyapango (dist_soyapango), San Salvador"
+      },
+      "limitations": [
+        "Remote Gemini executes only when BYOK API key is configured; offline deterministic path tested here."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/conversational/decision_analyst.py:GeminiDecisionAnalyst.analyze_evidence_package",
+          "saltbor/territorial_intelligence/evidence.py:verify_narrative_grounding"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "GeminiDecisionAnalyst",
+          "TerritorialEvidenceEngine"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_N",
+      "title": "Alternative commercial location comparison",
+      "research_question": "Can SALTBOR independently construct and compare two Salvadoran commercial locations without state cross-contamination?",
+      "hypothesis": "Santa Tecla and Soyapango resolve to distinct districts, geometries, and outcomes.",
+      "initial_conditions": {
+        "locations": [
+          "Santa Tecla",
+          "Soyapango"
+        ],
+        "service_type": "pupuseria"
+      },
+      "geographic_context": "La Libertad Sur vs San Salvador Este",
+      "data_sources": [
+        "OnDemandTerritorialSimulationEngine"
+      ],
+      "methodology": "Run compare_locations() across Santa Tecla and Soyapango under identical seed.",
+      "seed": 42,
+      "results": {
+        "comparison_id": "CMP_LOC_c23a4e36",
+        "objective": "Comparación territorial comercial",
+        "service_type": "pupuseria",
+        "seed": 42,
+        "locations": [
+          {
+            "scenario_id": "SCEN_117_97987cac",
+            "location_query": "Santa Tecla",
+            "state": "COMPLETED",
+            "resolved_location": {
+              "department_code": "LL",
+              "department_name": "La Libertad",
+              "municipality_id": "ll_sur",
+              "municipality_name": "La Libertad Sur",
+              "district_id": "dist_santa_tecla",
+              "district_name": "Santa Tecla",
+              "canton_name": null,
+              "lat": 13.676,
+              "lon": -89.28,
+              "coordinate_source": "district_centroid",
+              "is_urban": true,
+              "approx_population": 150000
+            },
+            "coverage_tier": "GOOD",
+            "buildings_observed": 435,
+            "confirmed_establishments": 130,
+            "business_density_per_km2": 102.36,
+            "residential_demand_potential": 0.902,
+            "catchment_effective_area_km2": 1.27,
+            "simulated_outcomes": {
+              "inbound_commuters": 0,
+              "household_avg_cash_usd": 34.26,
+              "low_liquidity_agent_share": 0.281,
+              "wealth_gini_simulated": 0.4122,
+              "household_income_earned_usd": 180.0,
+              "commercial_visitors": 8173.8,
+              "commercial_browsers_without_purchase": 4570.3,
+              "commercial_purchasers": 3603.5,
+              "commercial_conversion_rate": 0.4409,
+              "commercial_revenue_usd": 3243.14,
+              "commercial_net_profit_usd": 1373.67,
+              "school_attendance_rate": 1.0,
+              "school_dropout_risk": 0.0656,
+              "edu_unmet_person_days": 0.0,
+              "hlt_unmet_person_days": 0.0,
+              "simulated_pedestrian_activity_index": 0.917
+            },
+            "verdict": "Veredicto analítico: PROMISING"
+          },
+          {
+            "scenario_id": "SCEN_117_0519b10b",
+            "location_query": "Soyapango",
+            "state": "COMPLETED",
+            "resolved_location": {
+              "department_code": "SS",
+              "department_name": "San Salvador",
+              "municipality_id": "ss_este",
+              "municipality_name": "San Salvador Este",
+              "district_id": "dist_soyapango",
+              "district_name": "Soyapango",
+              "canton_name": null,
+              "lat": 13.71,
+              "lon": -89.141,
+              "coordinate_source": "district_centroid",
+              "is_urban": true,
+              "approx_population": 290000
+            },
+            "coverage_tier": "GOOD",
+            "buildings_observed": 1029,
+            "confirmed_establishments": 73,
+            "business_density_per_km2": 44.57,
+            "residential_demand_potential": 0.902,
+            "catchment_effective_area_km2": 1.638,
+            "simulated_outcomes": {
+              "inbound_commuters": 6,
+              "household_avg_cash_usd": 32.09,
+              "low_liquidity_agent_share": 0.4,
+              "wealth_gini_simulated": 0.4681,
+              "household_income_earned_usd": 180.0,
+              "commercial_visitors": 12262.5,
+              "commercial_browsers_without_purchase": 6750.0,
+              "commercial_purchasers": 5512.5,
+              "commercial_conversion_rate": 0.4495,
+              "commercial_revenue_usd": 4961.25,
+              "commercial_net_profit_usd": 2228.24,
+              "school_attendance_rate": 1.0,
+              "school_dropout_risk": 0.0738,
+              "edu_unmet_person_days": 0.0,
+              "hlt_unmet_person_days": 0.0,
+              "simulated_pedestrian_activity_index": 0.919
+            },
+            "verdict": "Veredicto analítico: PROMISING"
+          }
+        ],
+        "location_isolation_verified": true
+      },
+      "limitations": [
+        "Outcomes reflect local calibrated priors and OSM commercial density."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/territorial_intelligence/on_demand_engine.py:OnDemandTerritorialSimulationEngine.compare_locations"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "OnDemandTerritorialSimulationEngine"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_O",
+      "title": "Employment intervention & conserved spillover effects",
+      "research_question": "Do new commercial centers and factories split hires between local residents and commuters while conserving double-entry accounting ($0.00 diff)?",
+      "hypothesis": "Both interventions show non-zero commuter competition, consumption spillovers, and exact $0.00 ledger balance.",
+      "initial_conditions": {
+        "interventions": [
+          "COMMERCIAL_CENTER (Soyapango)",
+          "FACTORY_HIRING (Santa Ana)"
+        ]
+      },
+      "geographic_context": "Soyapango & Santa Ana",
+      "data_sources": [
+        "VerifiableEconomicLedger",
+        "EmploymentOpportunityAnalysisEngine"
+      ],
+      "methodology": "Execute both employment interventions and inspect split shares and ledger audits.",
+      "seed": 42,
+      "results": {
+        "commercial_center": {
+          "intervention_type": "COMMERCIAL_CENTER",
+          "location_name": "Soyapango",
+          "direct_jobs_created_or_lost": 65,
+          "local_resident_hire_share": 0.432,
+          "inbound_commuter_hire_share": 0.568,
+          "local_residents_hired": 28,
+          "inbound_commuters_hired": 37,
+          "total_wages_disbursed_usd": 27302.1,
+          "consumption_spillover_usd": 7736.4,
+          "mobility_delta_pct": 28.0,
+          "commercial_attraction_delta_pct": 35.0,
+          "ledger_conservation_diff_usd": 0.0,
+          "conservation_passed": true,
+          "assumptions": [
+            "Los nuevos empleos se distribuyen (43% residentes locales / 56% commuters entrantes) según accesibilidad vial y perfil de habilidad.",
+            "Propensión marginal al consumo local modelada en 42% para residentes y 18% para commuters sobre horizonte de 30 días."
+          ],
+          "limitations": [
+            "Escenario sintético de mercado laboral; la contratación real depende de salarios vigentes, competencia empresarial y requisitos técnicos."
+          ]
+        },
+        "factory_hiring": {
+          "intervention_type": "FACTORY_HIRING",
+          "location_name": "Santa Ana",
+          "direct_jobs_created_or_lost": 100,
+          "local_resident_hire_share": 0.432,
+          "inbound_commuter_hire_share": 0.568,
+          "local_residents_hired": 43,
+          "inbound_commuters_hired": 57,
+          "total_wages_disbursed_usd": 45000.0,
+          "consumption_spillover_usd": 12747.0,
+          "mobility_delta_pct": 24.0,
+          "commercial_attraction_delta_pct": 18.0,
+          "ledger_conservation_diff_usd": 0.0,
+          "conservation_passed": true,
+          "assumptions": [
+            "Los nuevos empleos se distribuyen (43% residentes locales / 56% commuters entrantes) según accesibilidad vial y perfil de habilidad.",
+            "Propensión marginal al consumo local modelada en 42% para residentes y 18% para commuters sobre horizonte de 30 días."
+          ],
+          "limitations": [
+            "Escenario sintético de mercado laboral; la contratación real depende de salarios vigentes, competencia empresarial y requisitos técnicos."
+          ]
+        }
+      },
+      "limitations": [
+        "Escenario sintético de mercado laboral; la contratación real depende de salarios vigentes, competencia empresarial y requisitos técnicos."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/territorial_intelligence/employment.py:EmploymentOpportunityAnalysisEngine.simulate_employment_intervention"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "EmploymentOpportunityAnalysisEngine",
+          "VerifiableEconomicLedger"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_P",
+      "title": "Historic Center preserved regression benchmark",
+      "research_question": "Can the Historic Center still be explicitly invoked as a reproducible testing and regression benchmark?",
+      "hypothesis": "Both SimulationRunner.create_historic_center_benchmark() and on-demand benchmark scenario succeed cleanly.",
+      "initial_conditions": {
+        "ticks": 24,
+        "seed": 42
+      },
+      "geographic_context": "San Salvador Centro Histórico (Explicit Benchmark)",
+      "data_sources": [
+        "Historic Center GIS & Benchmark Registry"
+      ],
+      "methodology": "Run 24 ticks of explicit Historic Center runner and on-demand benchmark scenario.",
+      "seed": 42,
+      "results": {
+        "runner_ticks": 24,
+        "on_demand_scenario_id": "SCEN_117_6050d36d",
+        "state": "COMPLETED"
+      },
+      "limitations": [
+        "Explicit invocation required; never auto-loaded as default."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/simulation/runner.py:SimulationRunner.create_historic_center_benchmark"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "SimulationRunner",
+          "OnDemandTerritorialSimulationEngine"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_Q",
+      "title": "Cross-department territorial scenario execution",
+      "research_question": "Do scenarios across 4 distinct departments run independently without falling back to Historic Center (0614)?",
+      "hypothesis": "All 4 cities complete with distinct district_ids and zero 0614 fallback.",
+      "initial_conditions": {
+        "locations": [
+          "Soyapango",
+          "San Miguel",
+          "Santa Ana",
+          "Chalatenango"
+        ]
+      },
+      "geographic_context": "SS, SM, SA, CH",
+      "data_sources": [
+        "D.L. 762",
+        "Geofabrik OSM"
+      ],
+      "methodology": "Execute 4 cross-department scenarios sequentially and verify district isolation.",
+      "seed": 42,
+      "results": {
+        "Soyapango": {
+          "state": "COMPLETED",
+          "district_id": "dist_soyapango",
+          "dept": "San Salvador",
+          "buildings": 2195
+        },
+        "San Miguel": {
+          "state": "COMPLETED",
+          "district_id": "dist_san_miguel",
+          "dept": "San Miguel",
+          "buildings": 939
+        },
+        "Santa Ana": {
+          "state": "COMPLETED",
+          "district_id": "dist_santa_ana",
+          "dept": "Santa Ana",
+          "buildings": 1264
+        },
+        "Chalatenango": {
+          "state": "COMPLETED",
+          "district_id": "dist_chalatenango",
+          "dept": "Chalatenango",
+          "buildings": 1248
+        }
+      },
+      "limitations": [],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/territorial_intelligence/on_demand_engine.py"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "OnDemandTerritorialSimulationEngine"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_R",
+      "title": "Sustained performance under 4 concurrent scenarios",
+      "research_question": "Can SALTBOR run 4 independent multi-department scenarios concurrently within safe latency and SQLite read-only safety?",
+      "hypothesis": "All 4 worker threads complete cleanly in <30s with zero read-only SQLite lock errors.",
+      "initial_conditions": {
+        "workers": 4,
+        "locations": [
+          "Soyapango",
+          "Santa Tecla",
+          "San Miguel",
+          "Santa Ana"
+        ]
+      },
+      "geographic_context": "Multi-department concurrent",
+      "data_sources": [
+        "geography.sqlite (mode=ro)"
+      ],
+      "methodology": "Execute 4 concurrent scenarios via ThreadPoolExecutor.",
+      "seed": 42,
+      "results": {
+        "states": [
+          "COMPLETED",
+          "COMPLETED",
+          "COMPLETED",
+          "COMPLETED"
+        ],
+        "wall_clock_seconds": 1.636
+      },
+      "limitations": [
+        "Thread isolation constructs per-worker OnDemand engine sharing read-only R-Tree geography."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/territorial_intelligence/on_demand_engine.py"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "OnDemandTerritorialSimulationEngine",
+          "IngestedGeography"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_S",
+      "title": "SQLite R-Tree spatial index and 262-district coverage performance",
+      "research_question": "Does geographic_features_rtree accelerate national queries across 795,877 OSM features to sub-50ms and aggregate 262 districts rapidly?",
+      "hypothesis": "R-Tree bbox query completes in <50ms and national coverage covers all 14 departments and 262 districts.",
+      "initial_conditions": {
+        "total_osm_features": 795877
+      },
+      "geographic_context": "All 262 districts of El Salvador",
+      "data_sources": [
+        "geography.sqlite + geographic_features_rtree"
+      ],
+      "methodology": "Time R-Tree 500-building query in Soyapango and full 262-district national coverage scan.",
+      "seed": 42,
+      "results": {
+        "rtree_indexed": true,
+        "soyapango_500_buildings_ms": 8.96,
+        "national_262_districts_coverage_ms": 966.0,
+        "tier_counts": {
+          "GOOD": 199,
+          "PARTIAL": 61,
+          "POOR": 2,
+          "INSUFFICIENT": 0
+        }
+      },
+      "limitations": [
+        "First cold SQLite page warm-up may add slight OS disk read latency."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/datasets/gis/pipeline.py:IngestedGeography.features_in_bbox",
+          "saltbor/territorial_intelligence/coverage.py"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "IngestedGeography",
+          "NationalTerritorialCoverageRegistry"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "experiment_id": "EXP_117_T",
+      "title": "End-to-end multi-turn conversational territorial simulation",
+      "research_question": "Does conversational studio retain business & Santa Tecla location across follow-ups and produce Stage B A–G evidence?",
+      "hypothesis": "Turns 1–3 retain Santa Tecla and update workforce/objective seamlessly; Stage B produces A–G evidence.",
+      "initial_conditions": {
+        "turns": 3
+      },
+      "geographic_context": "Santa Tecla, La Libertad Sur",
+      "data_sources": [
+        "SALTBORConversationalOrchestrator",
+        "OnDemandTerritorialSimulationEngine"
+      ],
+      "methodology": "Send 3 sequential Spanish turns and execute Stage B.",
+      "seed": 42,
+      "results": {
+        "turn1_district": "Santa Tecla",
+        "turn2_workers": [
+          2,
+          4
+        ],
+        "turn3_district": "Santa Tecla",
+        "stage_b_verdict": "PROMISING",
+        "has_ag_evidence": true
+      },
+      "limitations": [
+        "Deterministic Spanish NLU tested; optional Gemini enrichment verified via privacy-guarded fallback."
+      ],
+      "reproducibility": {
+        "git_commit": "bd89009",
+        "source_references": [
+          "saltbor/conversational/orchestrator.py:SALTBORConversationalOrchestrator.handle_message"
+        ],
+        "test_suite": "tests/test_experiments/test_phase117_territorial_experiments.py",
+        "graphify_nodes": [
+          "SALTBORConversationalOrchestrator"
+        ]
+      },
+      "passed": true
+    }
+  ]
+}

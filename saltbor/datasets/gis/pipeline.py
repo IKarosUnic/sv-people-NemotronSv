@@ -145,6 +145,11 @@ _BUILDING_CLASSES = {
     "house": "residential",
     "apartments": "residential",
     "detached": "residential",
+    "terrace": "residential",
+    "semidetached_house": "residential",
+    "dormitory": "residential",
+    "bungalow": "residential",
+    "cabin": "residential",
     "garage": "residential",
     "garages": "residential",
     "hut": "residential",
@@ -154,23 +159,56 @@ _BUILDING_CLASSES = {
     "supermarket": "commercial",
     "kiosk": "commercial",
     "office": "commercial",
+    "hotel": "commercial",
+    "shop": "commercial",
     "industrial": "industrial",
     "warehouse": "industrial",
     "manufacture": "industrial",
-    "school": "institutional",
-    "university": "institutional",
-    "college": "institutional",
-    "hospital": "institutional",
-    "clinic": "institutional",
+    "factory": "industrial",
+    "hangar": "industrial",
+    "storage_tank": "industrial",
+    "service": "industrial",
+    "school": "educational",
+    "university": "educational",
+    "college": "educational",
+    "kindergarten": "educational",
+    "hospital": "health",
+    "clinic": "health",
+    "doctors": "health",
     "government": "institutional",
     "public": "institutional",
     "civic": "institutional",
+    "fire_station": "institutional",
+    "police": "institutional",
+    "townhall": "institutional",
+    "courthouse": "institutional",
+    "barn": "agricultural",
+    "farm": "agricultural",
+    "greenhouse": "agricultural",
+    "stable": "agricultural",
+    "sty": "agricultural",
+    "cowshed": "agricultural",
+    "farm_auxiliary": "agricultural",
     "church": "religious",
     "cathedral": "religious",
     "chapel": "religious",
     "mosque": "religious",
     "temple": "religious",
-    "yes": "residential",
+    "synagogue": "religious",
+    "religious": "religious",
+    "stadium": "recreational",
+    "sports_hall": "recreational",
+    "grandstand": "recreational",
+    "pavilion": "recreational",
+    "sports_centre": "recreational",
+    "mixed": "mixed_use",
+    "mixed_use": "mixed_use",
+    "residential;commercial": "mixed_use",
+    "commercial;residential": "mixed_use",
+    "yes": "unknown",
+    "roof": "unknown",
+    "construction": "unknown",
+    "ruins": "unknown",
 }
 
 _LANDUSE_CLASSES = {
@@ -265,11 +303,15 @@ _AMENITY_CLASSES = {
     "doctors": "health",
     "dentist": "health",
     "pharmacy": "health",
+    "veterinary": "service_business",
     "police": "public_safety",
     "fire_station": "public_safety",
     "townhall": "government",
+    "town_hall": "government",
     "courthouse": "government",
+    "embassy": "government",
     "post_office": "public_service",
+    "community_centre": "public_service",
     "bank": "finance",
     "atm": "finance",
     "marketplace": "market",
@@ -278,8 +320,55 @@ _AMENITY_CLASSES = {
     "fast_food": "food_service",
     "cafe": "food_service",
     "bar": "food_service",
+    "pub": "food_service",
+    "bakery": "food_service",
+    "beverages": "food_service",
+    "food_court": "food_service",
     "fuel": "fuel",
     "bus_station": "transport",
+    "convenience": "retail_commercial",
+    "supermarket": "retail_commercial",
+    "mall": "retail_commercial",
+    "department_store": "retail_commercial",
+    "clothes": "retail_commercial",
+    "butcher": "retail_commercial",
+    "greengrocer": "retail_commercial",
+    "kiosk": "retail_commercial",
+    "shoe_shop": "retail_commercial",
+    "hardware": "retail_commercial",
+    "doityourself": "retail_commercial",
+    "electronics": "retail_commercial",
+    "furniture_shop": "retail_commercial",
+    "bookshop": "retail_commercial",
+    "stationery": "retail_commercial",
+    "gift_shop": "retail_commercial",
+    "jeweller": "retail_commercial",
+    "mobile_phone_shop": "retail_commercial",
+    "optician": "retail_commercial",
+    "sports_shop": "retail_commercial",
+    "toy_shop": "retail_commercial",
+    "bicycle_shop": "retail_commercial",
+    "car_dealership": "retail_commercial",
+    "general": "retail_commercial",
+    "florist": "retail_commercial",
+    "hairdresser": "service_business",
+    "beauty_shop": "service_business",
+    "laundry": "service_business",
+    "travel_agent": "service_business",
+    "car_wash": "service_business",
+    "car_rental": "service_business",
+    "computer_shop": "service_business",
+    "car_repair": "workshop",
+    "workshop": "workshop",
+    "hotel": "hospitality",
+    "hostel": "hospitality",
+    "motel": "hospitality",
+    "guesthouse": "hospitality",
+    "park": "recreation",
+    "pitch": "recreation",
+    "sports_centre": "recreation",
+    "stadium": "recreation",
+    "playground": "recreation",
 }
 
 LAYER_SPECS: tuple[LayerSpec, ...] = (
@@ -301,9 +390,10 @@ LAYER_SPECS: tuple[LayerSpec, ...] = (
         geometry_kind="polygon",
         class_field="type",
         class_map=_BUILDING_CLASSES,
+        default_class="unknown",
         limitations=(
             "Building footprints are real OSM footprints. Storey count, occupancy "
-            "and use are NOT implied by the polygon and are simulated separately."
+            "and use are NOT implied by untyped polygons and are classified conservatively."
         ),
     ),
     LayerSpec(
@@ -355,6 +445,14 @@ LAYER_SPECS: tuple[LayerSpec, ...] = (
         limitations="Stop positions are snapshots; service frequency and schedules are absent.",
     ),
     LayerSpec(
+        layer="transport_a",
+        stem="gis_osm_transport_a_free_1",
+        geometry_kind="polygon",
+        class_field="fclass",
+        class_map=_TRANSPORT_CLASSES,
+        limitations="Transport facility polygons record terminal/station footprints, not schedules.",
+    ),
+    LayerSpec(
         layer="pois",
         stem="gis_osm_pois_free_1",
         geometry_kind="point",
@@ -364,6 +462,44 @@ LAYER_SPECS: tuple[LayerSpec, ...] = (
             "Points of interest record presence, not capacity, staffing, opening "
             "hours or operating status. Saltbor models those attributes explicitly."
         ),
+    ),
+    LayerSpec(
+        layer="pois_a",
+        stem="gis_osm_pois_a_free_1",
+        geometry_kind="polygon",
+        class_field="fclass",
+        class_map=_AMENITY_CLASSES,
+        limitations=(
+            "Polygon POIs record facility footprints (schools, hospitals, malls, markets, businesses), "
+            "not staffing, capacity, or current operating hours."
+        ),
+    ),
+    LayerSpec(
+        layer="pofw",
+        stem="gis_osm_pofw_free_1",
+        geometry_kind="point",
+        class_field="fclass",
+        class_map={},
+        default_class="religious",
+        limitations="OSM places of worship points.",
+    ),
+    LayerSpec(
+        layer="pofw_a",
+        stem="gis_osm_pofw_a_free_1",
+        geometry_kind="polygon",
+        class_field="fclass",
+        class_map={},
+        default_class="religious",
+        limitations="OSM places of worship polygons.",
+    ),
+    LayerSpec(
+        layer="protected_areas",
+        stem="gis_osm_protected_areas_a_free_1",
+        geometry_kind="polygon",
+        class_field="fclass",
+        class_map={},
+        default_class="protected_area",
+        limitations="Protected area polygons reflect OSM boundary relations and may lag MARN updates.",
     ),
     LayerSpec(
         layer="adminareas",
@@ -606,6 +742,14 @@ CREATE INDEX IF NOT EXISTS idx_features_layer_lat_lon ON geographic_features(lay
 CREATE INDEX IF NOT EXISTS idx_features_class ON geographic_features(layer, feature_class);
 CREATE INDEX IF NOT EXISTS idx_features_bbox ON geographic_features(min_lon, min_lat, max_lon, max_lat);
 CREATE INDEX IF NOT EXISTS idx_features_name ON geographic_features(name);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS geographic_features_rtree USING rtree(
+    id,
+    min_lon,
+    max_lon,
+    min_lat,
+    max_lat
+);
 """
 
 _INSERT = """
@@ -627,7 +771,7 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
     ).fetchone()
     if row and "coverage_bbox" not in (row[0] or ""):
         logger.info("Rebuilding geography schema (incompatible derived artifact)")
-        for table in ("geographic_features", "layer_provenance", "dataset_provenance"):
+        for table in ("geographic_features_rtree", "geographic_features", "layer_provenance", "dataset_provenance"):
             conn.execute(f"DROP TABLE IF EXISTS {table}")
     conn.executescript(_SCHEMA)
 
@@ -687,6 +831,9 @@ def ingest(
 
     conn = sqlite3.connect(output)
     try:
+        conn.execute("PRAGMA journal_mode=MEMORY;")
+        conn.execute("PRAGMA synchronous=OFF;")
+        conn.execute("PRAGMA temp_store=MEMORY;")
         _ensure_schema(conn)
         conn.execute("DELETE FROM geographic_features WHERE layer IN (%s)" % ",".join("?" * len(specs)),
                      [s.layer for s in specs])
@@ -756,6 +903,13 @@ def ingest(
             total += written
             logger.info("Ingested %s: %d features", spec.layer, written)
 
+        # Rebuild SQLite R-Tree index aligned with current rowids
+        conn.execute("DELETE FROM geographic_features_rtree")
+        conn.execute(
+            "INSERT INTO geographic_features_rtree (id, min_lon, max_lon, min_lat, max_lat) "
+            "SELECT rowid, min(min_lon, max_lon), max(min_lon, max_lon), "
+            "min(min_lat, max_lat), max(min_lat, max_lat) FROM geographic_features"
+        )
         conn.execute(
             "INSERT OR REPLACE INTO dataset_provenance VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             (
@@ -773,7 +927,10 @@ def ingest(
                 "Absence of a feature is not evidence of its absence on the ground.",
             ),
         )
+        conn.execute("ANALYZE;")
         conn.commit()
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA synchronous=NORMAL;")
     finally:
         conn.close()
 
@@ -803,6 +960,7 @@ class IngestedGeography:
         self.path = Path(path) if path else DEFAULT_OUTPUT
         self.available = self.path.exists()
         self._conn: Optional[sqlite3.Connection] = None
+        self._has_rtree_cached: Optional[bool] = None
         if not self.available:
             logger.warning(
                 "Ingested geography database %s not found; run "
@@ -815,14 +973,31 @@ class IngestedGeography:
         if self._conn is None:
             if not self.available:
                 raise FileNotFoundError(self.path)
-            self._conn = sqlite3.connect(f"file:{self.path}?mode=ro", uri=True)
+            self._conn = sqlite3.connect(
+                f"file:{self.path}?mode=ro",
+                uri=True,
+                check_same_thread=False,
+            )
             self._conn.row_factory = sqlite3.Row
         return self._conn
+
+    @property
+    def has_rtree(self) -> bool:
+        if self._has_rtree_cached is None:
+            if not self.available:
+                self._has_rtree_cached = False
+            else:
+                row = self.conn.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='geographic_features_rtree'"
+                ).fetchone()
+                self._has_rtree_cached = row is not None
+        return self._has_rtree_cached
 
     def close(self) -> None:
         if self._conn is not None:
             self._conn.close()
             self._conn = None
+        self._has_rtree_cached = None
 
     # -- provenance -------------------------------------------------------
     def manifest(self) -> dict[str, Any]:
@@ -843,6 +1018,7 @@ class IngestedGeography:
         return {
             "available": True,
             "attribution": OSM_ATTRIBUTION,
+            "rtree_indexed": self.has_rtree,
             "dataset": dataset,
             "layers": layers,
         }
@@ -864,20 +1040,37 @@ class IngestedGeography:
         limit: int = 500,
         include_geometry: bool = False,
     ) -> list[dict[str, Any]]:
-        """Return features intersecting ``(min_lon, min_lat, max_lon, max_lat)``."""
+        """Return features intersecting ``(min_lon, min_lat, max_lon, max_lat)`` using R-Tree when present."""
         if not self.available:
             return []
         min_lon, min_lat, max_lon, max_lat = bbox
-        sql = (
-            "SELECT * FROM geographic_features WHERE NOT (max_lon < ? OR min_lon > ? "
-            "OR max_lat < ? OR min_lat > ?)"
+        cols = (
+            "gf.feature_id, gf.layer, gf.osm_id, gf.name, gf.feature_class, gf.source_class, "
+            "gf.lat, gf.lon, gf.min_lon, gf.min_lat, gf.max_lon, gf.max_lat, "
+            "gf.geometry_type, gf.validation_state, gf.source, gf.source_url, gf.license, gf.acquired_at"
         )
-        params: list[Any] = [min_lon, max_lon, min_lat, max_lat]
+        if include_geometry:
+            cols += ", gf.geometry_json"
+
+        if self.has_rtree:
+            sql = (
+                f"SELECT {cols} FROM geographic_features gf "
+                "JOIN geographic_features_rtree r ON gf.rowid = r.id "
+                "WHERE r.max_lon >= ? AND r.min_lon <= ? AND r.max_lat >= ? AND r.min_lat <= ?"
+            )
+            params: list[Any] = [min_lon, max_lon, min_lat, max_lat]
+        else:
+            sql = (
+                f"SELECT {cols} FROM geographic_features gf "
+                "WHERE NOT (gf.max_lon < ? OR gf.min_lon > ? OR gf.max_lat < ? OR gf.min_lat > ?)"
+            )
+            params = [min_lon, max_lon, min_lat, max_lat]
+
         if layer:
-            sql += " AND layer = ?"
+            sql += " AND gf.layer = ?"
             params.append(layer)
         if feature_class:
-            sql += " AND feature_class = ?"
+            sql += " AND gf.feature_class = ?"
             params.append(feature_class)
         sql += " LIMIT ?"
         params.append(limit)
@@ -885,20 +1078,54 @@ class IngestedGeography:
         for row in self.conn.execute(sql, params).fetchall():
             item = {
                 "feature_id": row["feature_id"],
+                "osm_id": row["osm_id"],
                 "layer": row["layer"],
                 "name": row["name"],
                 "feature_class": row["feature_class"],
+                "source_class": row["source_class"],
                 "centroid": {"lat": row["lat"], "lon": row["lon"]},
                 "bbox": [row["min_lon"], row["min_lat"], row["max_lon"], row["max_lat"]],
                 "geometry_type": row["geometry_type"],
                 "validation_state": row["validation_state"],
                 "source": row["source"],
+                "source_url": row["source_url"],
                 "license": row["license"],
+                "acquired_at": row["acquired_at"],
             }
             if include_geometry:
                 item["geometry"] = json.loads(row["geometry_json"])
             out.append(item)
         return out
+
+    def count_in_bbox(
+        self,
+        bbox: tuple[float, float, float, float],
+        layer: Optional[str] = None,
+    ) -> dict[str, int]:
+        """Count features by feature_class inside a bounding box via R-Tree."""
+        if not self.available:
+            return {}
+        min_lon, min_lat, max_lon, max_lat = bbox
+        if self.has_rtree:
+            sql = (
+                "SELECT gf.feature_class, COUNT(*) AS n "
+                "FROM geographic_features gf "
+                "JOIN geographic_features_rtree r ON gf.rowid = r.id "
+                "WHERE r.max_lon >= ? AND r.min_lon <= ? AND r.max_lat >= ? AND r.min_lat <= ?"
+            )
+            params: list[Any] = [min_lon, max_lon, min_lat, max_lat]
+        else:
+            sql = (
+                "SELECT gf.feature_class, COUNT(*) AS n FROM geographic_features gf "
+                "WHERE NOT (gf.max_lon < ? OR gf.min_lon > ? OR gf.max_lat < ? OR gf.min_lat > ?)"
+            )
+            params = [min_lon, max_lon, min_lat, max_lat]
+        if layer:
+            sql += " AND gf.layer = ?"
+            params.append(layer)
+        sql += " GROUP BY gf.feature_class ORDER BY n DESC"
+        rows = self.conn.execute(sql, params).fetchall()
+        return {row["feature_class"]: int(row["n"]) for row in rows}
 
     def geojson(
         self,
@@ -907,13 +1134,7 @@ class IngestedGeography:
         limit: int = 3000,
         margin_deg: float = 0.003,
     ) -> dict[str, Any]:
-        """Return viewport geometry as a GeoJSON FeatureCollection.
-
-        Uses the composite ``(layer, lat, lon)`` index on the stored centroid
-        with a small margin, then filters exactly against each feature's
-        bounding box.  Scanning every road of the country to answer a map pan
-        would cost ~130 ms per request and would not scale beyond the pilot.
-        """
+        """Return viewport geometry as a GeoJSON FeatureCollection via R-Tree or composite index."""
         collection: dict[str, Any] = {
             "type": "FeatureCollection",
             "features": [],
@@ -931,33 +1152,38 @@ class IngestedGeography:
 
         min_lon, min_lat, max_lon, max_lat = bbox
         placeholders = ",".join("?" for _ in layers)
-        cursor = self.conn.execute(
-            "SELECT layer, feature_id, name, feature_class, min_lon, min_lat, "
-            "max_lon, max_lat, geometry_json, validation_state, source, license "
-            "FROM geographic_features WHERE layer IN ("
-            + placeholders
-            + ") AND lat BETWEEN ? AND ? AND lon BETWEEN ? AND ?",
-            (
-                *layers,
-                min_lat - margin_deg,
-                max_lat + margin_deg,
-                min_lon - margin_deg,
-                max_lon + margin_deg,
-            ),
-        )
+        if self.has_rtree:
+            cursor = self.conn.execute(
+                "SELECT gf.layer, gf.feature_id, gf.name, gf.feature_class, gf.min_lon, gf.min_lat, "
+                "gf.max_lon, gf.max_lat, gf.geometry_json, gf.validation_state, gf.source, gf.license "
+                "FROM geographic_features gf "
+                "JOIN geographic_features_rtree r ON gf.rowid = r.id "
+                "WHERE gf.layer IN (" + placeholders + ") "
+                "AND r.max_lon >= ? AND r.min_lon <= ? AND r.max_lat >= ? AND r.min_lat <= ?",
+                (*layers, min_lon, max_lon, min_lat, max_lat),
+            )
+        else:
+            cursor = self.conn.execute(
+                "SELECT layer, feature_id, name, feature_class, min_lon, min_lat, "
+                "max_lon, max_lat, geometry_json, validation_state, source, license "
+                "FROM geographic_features WHERE layer IN ("
+                + placeholders
+                + ") AND lat BETWEEN ? AND ? AND lon BETWEEN ? AND ?",
+                (
+                    *layers,
+                    min_lat - margin_deg,
+                    max_lat + margin_deg,
+                    min_lon - margin_deg,
+                    max_lon + margin_deg,
+                ),
+            )
 
         features = []
-        # The indexed pre-filter is approximate: features whose centroid falls
-        # inside the widened window may still lie outside the viewport.  SQL
-        # LIMIT must therefore not be applied before the exact test, or a dense
-        # edge of the viewport can consume the whole window and return nothing.
-        # Iterate lazily and stop at the requested number of real hits.
         max_candidates = max(limit * 4, 4000)
         for candidates, row in enumerate(cursor):
             if candidates >= max_candidates:
                 collection["properties"]["truncated"] = True
                 break
-            # Exact intersection test against the feature bounding box.
             if (
                 row["max_lon"] < min_lon
                 or row["min_lon"] > max_lon
@@ -997,29 +1223,37 @@ class IngestedGeography:
         return collection
 
     def nearest_road(self, lat: float, lon: float, radius_deg: float = 0.02) -> Optional[dict[str, Any]]:
-        """Return the nearest road feature to a WGS84 point, if any.
-
-        The search widens its bounding box progressively.  In the dense San
-        Salvador extract a single 0.02° box contains thousands of road
-        segments, so always scanning it costs ~130 ms per lookup; starting at
-        0.0015° finds the nearest street in a few dozen rows for nearly every
-        urban point and only broadens where the territory is sparse.
-        """
+        """Return the nearest road feature to a WGS84 point, if any."""
         if not self.available:
             return None
         best: Optional[tuple[float, dict[str, Any]]] = None
         for current_radius in (0.0015, 0.004, 0.01, radius_deg):
-            rows = self.conn.execute(
-                "SELECT feature_id, name, feature_class, lat, lon "
-                "FROM geographic_features WHERE layer='roads' "
-                "AND lat BETWEEN ? AND ? AND lon BETWEEN ? AND ?",
-                (
-                    lat - current_radius,
-                    lat + current_radius,
-                    lon - current_radius,
-                    lon + current_radius,
-                ),
-            ).fetchall()
+            if self.has_rtree:
+                rows = self.conn.execute(
+                    "SELECT gf.feature_id, gf.name, gf.feature_class, gf.lat, gf.lon "
+                    "FROM geographic_features gf "
+                    "JOIN geographic_features_rtree r ON gf.rowid = r.id "
+                    "WHERE gf.layer='roads' "
+                    "AND r.max_lon >= ? AND r.min_lon <= ? AND r.max_lat >= ? AND r.min_lat <= ?",
+                    (
+                        lon - current_radius,
+                        lon + current_radius,
+                        lat - current_radius,
+                        lat + current_radius,
+                    ),
+                ).fetchall()
+            else:
+                rows = self.conn.execute(
+                    "SELECT feature_id, name, feature_class, lat, lon "
+                    "FROM geographic_features WHERE layer='roads' "
+                    "AND lat BETWEEN ? AND ? AND lon BETWEEN ? AND ?",
+                    (
+                        lat - current_radius,
+                        lat + current_radius,
+                        lon - current_radius,
+                        lon + current_radius,
+                    ),
+                ).fetchall()
             for row in rows:
                 d = (row["lat"] - lat) ** 2 + (row["lon"] - lon) ** 2
                 if best is None or d < best[0]:
@@ -1033,7 +1267,6 @@ class IngestedGeography:
                             "distance_deg": round(d ** 0.5, 6),
                         },
                     )
-            # A hit well inside the box cannot be beaten by a wider search.
             if best is not None and best[0] ** 0.5 <= current_radius:
                 break
             if current_radius >= radius_deg:
@@ -1050,17 +1283,28 @@ class IngestedGeography:
     ) -> list[dict[str, Any]]:
         if not self.available:
             return []
-        rows = self.conn.execute(
-            "SELECT feature_id, name, feature_class, lat, lon FROM geographic_features "
-            "WHERE layer=? AND lat BETWEEN ? AND ? AND lon BETWEEN ? AND ?",
-            (layer, lat - radius_deg, lat + radius_deg, lon - radius_deg, lon + radius_deg),
-        ).fetchall()
+        if self.has_rtree:
+            rows = self.conn.execute(
+                "SELECT gf.feature_id, gf.name, gf.feature_class, gf.source_class, gf.lat, gf.lon "
+                "FROM geographic_features gf "
+                "JOIN geographic_features_rtree r ON gf.rowid = r.id "
+                "WHERE gf.layer=? "
+                "AND r.max_lon >= ? AND r.min_lon <= ? AND r.max_lat >= ? AND r.min_lat <= ?",
+                (layer, lon - radius_deg, lon + radius_deg, lat - radius_deg, lat + radius_deg),
+            ).fetchall()
+        else:
+            rows = self.conn.execute(
+                "SELECT feature_id, name, feature_class, source_class, lat, lon FROM geographic_features "
+                "WHERE layer=? AND lat BETWEEN ? AND ? AND lon BETWEEN ? AND ?",
+                (layer, lat - radius_deg, lat + radius_deg, lon - radius_deg, lon + radius_deg),
+            ).fetchall()
         ranked = sorted(rows, key=lambda r: (r["lat"] - lat) ** 2 + (r["lon"] - lon) ** 2)
         return [
             {
                 "feature_id": r["feature_id"],
                 "name": r["name"],
                 "feature_class": r["feature_class"],
+                "source_class": r["source_class"],
                 "centroid": {"lat": r["lat"], "lon": r["lon"]},
             }
             for r in ranked[:limit]
@@ -1071,14 +1315,8 @@ class IngestedGeography:
         if not self.available:
             return {"available": False}
         profile: dict[str, Any] = {"available": True, "bbox": list(bbox), "by_layer": {}}
-        for layer in ("landuse", "natural", "water", "waterways", "buildings", "roads"):
-            rows = self.conn.execute(
-                "SELECT feature_class, COUNT(*) AS n FROM geographic_features "
-                "WHERE layer=? AND NOT (max_lon < ? OR min_lon > ? OR max_lat < ? OR min_lat > ?) "
-                "GROUP BY feature_class ORDER BY n DESC",
-                (layer, bbox[0], bbox[2], bbox[1], bbox[3]),
-            ).fetchall()
-            profile["by_layer"][layer] = {row["feature_class"]: row["n"] for row in rows}
+        for layer in ("landuse", "natural", "water", "waterways", "buildings", "roads", "protected_areas"):
+            profile["by_layer"][layer] = self.count_in_bbox(bbox, layer=layer)
         return profile
 
 

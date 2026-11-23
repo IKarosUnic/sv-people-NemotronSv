@@ -6300,10 +6300,14 @@ def get_ai_context_partition_endpoint(partition: str = "SIMULATION_ONTOLOGY") ->
 # SALTBOR PHASE 1.16–1.17 — MODULAR SUB-ROUTERS
 # ============================================================================
 from saltbor.visualization.routers import (
+    conversational_studio_router,
     national_validation_router,
     pipeline_router,
+    territorial_intelligence_router,
 )
 
 router.include_router(pipeline_router)
 router.include_router(national_validation_router)
+router.include_router(conversational_studio_router)
+router.include_router(territorial_intelligence_router)
 

@@ -225,6 +225,10 @@ class SimulationRunner:
 
     def __init__(self, config: Optional[SimulationConfig] = None) -> None:
         self.config = config or SimulationConfig()
+        self.active_territory_scope: Optional[str] = self.config.territory_scope
+        self.is_historic_center_benchmark: bool = (
+            self.config.territory_mode == "historic_center_benchmark"
+        )
         self.clock = SimulationClock(config=self.config)
         self.event_bus = EventBus()
         self.phase = SimulationPhase.INITIALIZING
@@ -412,6 +416,26 @@ class SimulationRunner:
         self.tick_pipeline = TickStagePipeline()
         self.lod_budget_controller = AdaptiveLODBudgetController()
         self.live_scenario_bridge = LiveScenarioBridge(self)
+
+    @classmethod
+    def create_historic_center_benchmark(
+        cls,
+        seed: int = 42,
+        db_path: Path | str = ":memory:",
+        population_size: int = 20,
+    ) -> "SimulationRunner":
+        """Explicitly construct the preserved Historic Center regression benchmark runner."""
+        cfg = SimulationConfig(
+            random_seed=seed,
+            database_path=Path(db_path),
+            initial_population_size=population_size,
+            territory_mode="historic_center_benchmark",
+            territory_scope="San Salvador Centro Histórico",
+            territory_district_id="0614",
+            center_lat=13.6989,
+            center_lon=-89.1914,
+        )
+        return cls(config=cfg)
 
     def _register_orchestrator_engines(self) -> None:
         """Register all civilization engines into the master orchestrator."""
@@ -1169,13 +1193,25 @@ class SimulationRunner:
             if commerce_data:
                 logger.info("Restored civilization commerce state from database.")
 
+        # Phase 1.17: Territory-scoped entity initialization (non-Historic-Center when territory_district_id is specified)
+        explicit_district = getattr(self.config, "territory_district_id", None)
+        explicit_scope = getattr(self.config, "territory_scope", None)
+        is_explicit_non_hc = bool(
+            explicit_district
+            and getattr(self.config, "territory_mode", "on_demand") != "historic_center_benchmark"
+        )
+        scope_label = explicit_scope or "San Salvador Centro"
+        community_id = f"comunidad_{explicit_district.lower()}" if is_explicit_non_hc else "comunidad_centro_historico"
+        if not self.active_territory_scope:
+            self.active_territory_scope = scope_label if is_explicit_non_hc else "historic_center_benchmark_compat"
+
         # 0. Phase 1.11 Master Civilization Entity
         if not self.civilization.civilizations:
             self.civilization.found_civilization(
                 name="Sociedad Cuscatleca",
                 territory="El Salvador",
                 initial_year=2026.0,
-                initial_settlement_name="San Salvador Centro",
+                initial_settlement_name=scope_label,
             )
 
         # 1. Corner Store (Tienda San Pedro)
@@ -1183,7 +1219,7 @@ class SimulationRunner:
             owner = self.population.get_all()[1] if self.population.count > 1 else self.population.get_all()[0]
             self.salvadoran_informal_commerce.register_corner_store(
                 store_id="tienda_san_pedro",
-                name="Tienda y Pulpería San Pedro",
+                name=f"Tienda Comunitaria {scope_label}" if is_explicit_non_hc else "Tienda y Pulpería San Pedro",
                 owner_uid=str(owner.uid),
                 location_id="mercado_central",
                 starting_cash=65.0,
@@ -1193,8 +1229,8 @@ class SimulationRunner:
         if not self.salvadoran_adesco.get_all_faenas():
             self.salvadoran_adesco.create_faena_project(
                 project_id="faena_fundacional",
-                name="Reparación Comunitaria de Cuesta El Calvario tras Lluvias",
-                community_id="comunidad_centro_historico",
+                name=f"Reparación Comunitaria de Camino en {scope_label}" if is_explicit_non_hc else "Reparación Comunitaria de Cuesta El Calvario tras Lluvias",
+                community_id=community_id,
                 target_problem="reparar_camino_vecinal",
                 required_hours=20.0,
             )
@@ -1204,7 +1240,7 @@ class SimulationRunner:
             if members:
                 self.salvadoran_adesco.create_cuchubal(
                     circle_id="cuchubal_vecinal_1",
-                    name="Cuchubal de Confianza San Esteban",
+                    name=f"Cuchubal Vecinal {scope_label}" if is_explicit_non_hc else "Cuchubal de Confianza San Esteban",
                     organizer_uid=members[0],
                     member_uids=members,
                     contribution_usd=10.0,
@@ -1388,9 +1424,9 @@ class SimulationRunner:
             all_uids = {str(h.uid) for h in humans}
             self.cpr_manager.register_resource(
                 resource_id="pozo_san_esteban",
-                name="Pozo Comunal y Tanque San Esteban",
+                name=f"Pozo Comunal {scope_label}" if is_explicit_non_hc else "Pozo Comunal y Tanque San Esteban",
                 resource_type=CPRType.WATER_WELL,
-                community_id="comunidad_centro_historico",
+                community_id=community_id,
                 location_id="plaza_central",
                 max_capacity=15000.0,
                 initial_stock=12000.0,
@@ -1402,9 +1438,9 @@ class SimulationRunner:
             )
             self.cpr_manager.register_resource(
                 resource_id="camino_el_calvario",
-                name="Cuesta y Camino Vecinal El Calvario",
+                name=f"Camino Vecinal {scope_label}" if is_explicit_non_hc else "Cuesta y Camino Vecinal El Calvario",
                 resource_type=CPRType.COMMUNAL_ROAD,
-                community_id="comunidad_centro_historico",
+                community_id=community_id,
                 location_id="casa_norte_1",
                 max_capacity=100.0,
                 initial_stock=90.0,
@@ -1416,9 +1452,9 @@ class SimulationRunner:
             )
             self.cpr_manager.register_resource(
                 resource_id="troja_comunal_centro",
-                name="Troja y Silo Comunal de Granos Básicos",
+                name=f"Troja Comunal {scope_label}" if is_explicit_non_hc else "Troja y Silo Comunal de Granos Básicos",
                 resource_type=CPRType.COMMUNITY_GRAIN_BANK,
-                community_id="comunidad_centro_historico",
+                community_id=community_id,
                 location_id="mercado_central",
                 max_capacity=200.0,
                 initial_stock=150.0,
@@ -1470,8 +1506,8 @@ class SimulationRunner:
             humans = self.population.get_all()
             director_uid = str(humans[0].uid) if humans else "admin_01"
             self.institutional_evolution.register_institution(
-                name="ADESCO y Administración Comunal Centro Histórico",
-                formal_acronym="ADESCO-CH",
+                name=f"ADESCO {scope_label}" if is_explicit_non_hc else "ADESCO y Administración Comunal Centro Histórico",
+                formal_acronym=f"ADESCO-{explicit_district}" if is_explicit_non_hc else "ADESCO-CH",
                 domain=InstitutionDomain.COMMUNITY_ADMINISTRATION,
                 mission="Organización vecinal, gestión de faenas y defensa de infraestructura comunitaria.",
                 headquarters_loc_id="casa_comunal",
@@ -1481,8 +1517,8 @@ class SimulationRunner:
                 tick=0,
             )
             self.institutional_evolution.register_institution(
-                name="Unidad Comunitaria de Salud Familiar El Calvario",
-                formal_acronym="UCSF-CALVARIO",
+                name=f"Unidad Comunitaria de Salud {scope_label}" if is_explicit_non_hc else "Unidad Comunitaria de Salud Familiar El Calvario",
+                formal_acronym=f"UCSF-{explicit_district}" if is_explicit_non_hc else "UCSF-CALVARIO",
                 domain=InstitutionDomain.HEALTHCARE,
                 mission="Atención médica ambulatoria, prevención de epidemias y saneamiento ambiental.",
                 headquarters_loc_id="clinica_salud",

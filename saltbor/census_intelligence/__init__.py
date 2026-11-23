@@ -1,0 +1,125 @@
+"""SALTBOR Phase 1.18 — National Census Intelligence, Dynamic Territorial Discovery
+& Synthetic Population Engine.
+
+Provides statistically grounded, spatially explicit synthetic populations for
+El Salvador calibrated against official ONEC/BCR Censo 2024, EHPM, MINEDUCYT,
+and OpenStreetMap territorial intelligence with strict 8-class provenance.
+"""
+
+from saltbor.census_intelligence.calibration import PopulationCalibrationEngine
+from saltbor.census_intelligence.census_engine import (
+    Censo2024ONECAdapter,
+    CensusSourceAdapter,
+    EHPMAdapter,
+    InstitutionalCustomAdapter,
+    MINEDSchoolRegistryAdapter,
+    MINSALHealthAdapter,
+    NationalCensusDataIntegrationEngine,
+    PIIViolationError,
+)
+from saltbor.census_intelligence.household_generator import SyntheticHouseholdGenerationEngine
+from saltbor.census_intelligence.infrastructure_discovery import InfrastructureServiceDiscoveryEngine
+from saltbor.census_intelligence.mobility_accessibility import HumanMobilityAccessibilityEngine
+from saltbor.census_intelligence.pipeline import TerritorialPreparationPipeline
+from saltbor.census_intelligence.population_allocation import GeospatialPopulationAllocationEngine
+from saltbor.census_intelligence.schemas import (
+    BuildingAllocationRecord,
+    CalibrationReport,
+    CensusDatasetMetadata,
+    CensusImportResult,
+    CensusQueryResult,
+    CensusVariableRecord,
+    DiscoveredTerritorialContext,
+    EvidenceClassification,
+    GeographicGranularity,
+    InfrastructureEntity,
+    InfrastructureInventory,
+    MobilityAccessibilityReport,
+    MobilityEvidenceType,
+    PopulationAllocationResult,
+    PopulationPreparationCertificate,
+    ProvenancedIndicator,
+    SectorContextReport,
+    SmallAreaEstimate,
+    SyntheticHousehold,
+    SyntheticPerson,
+    SyntheticPopulationBatch,
+    TerritorialExpansionResult,
+    TerritorialPreparationResult,
+    TerritorialScaleArea,
+    TerritorialSelectionInput,
+    VariableCalibrationMetric,
+    VerificationStatus,
+    ZoneTier,
+    validate_provenance_integrity,
+)
+from saltbor.census_intelligence.sector_context import (
+    EducationSectorAnalyzer,
+    HealthSectorAnalyzer,
+    MarketSectorAnalyzer,
+    RoadSectorAnalyzer,
+    SectorAnalyzer,
+    SectorSpecificContextEngine,
+)
+from saltbor.census_intelligence.territorial_discovery import (
+    DynamicTerritorialExpansionEngine,
+    LocalTerritorialCache,
+    RateLimitedOSMAdapter,
+    TerritorialContextDiscoveryEngine,
+)
+
+__all__ = [
+    "BuildingAllocationRecord",
+    "CalibrationReport",
+    "Censo2024ONECAdapter",
+    "CensusDatasetMetadata",
+    "CensusImportResult",
+    "CensusQueryResult",
+    "CensusSourceAdapter",
+    "CensusVariableRecord",
+    "DiscoveredTerritorialContext",
+    "DynamicTerritorialExpansionEngine",
+    "EducationSectorAnalyzer",
+    "EHPMAdapter",
+    "EvidenceClassification",
+    "GeographicGranularity",
+    "GeospatialPopulationAllocationEngine",
+    "HealthSectorAnalyzer",
+    "HumanMobilityAccessibilityEngine",
+    "InfrastructureEntity",
+    "InfrastructureInventory",
+    "InfrastructureServiceDiscoveryEngine",
+    "InstitutionalCustomAdapter",
+    "LocalTerritorialCache",
+    "MarketSectorAnalyzer",
+    "MINEDSchoolRegistryAdapter",
+    "MINSALHealthAdapter",
+    "MobilityAccessibilityReport",
+    "MobilityEvidenceType",
+    "NationalCensusDataIntegrationEngine",
+    "PIIViolationError",
+    "PopulationAllocationResult",
+    "PopulationCalibrationEngine",
+    "PopulationPreparationCertificate",
+    "ProvenancedIndicator",
+    "RateLimitedOSMAdapter",
+    "RoadSectorAnalyzer",
+    "SectorAnalyzer",
+    "SectorContextReport",
+    "SectorSpecificContextEngine",
+    "SmallAreaEstimate",
+    "SyntheticHousehold",
+    "SyntheticHouseholdGenerationEngine",
+    "SyntheticPerson",
+    "SyntheticPopulationBatch",
+    "TerritorialContextDiscoveryEngine",
+    "TerritorialExpansionResult",
+    "TerritorialPreparationPipeline",
+    "TerritorialPreparationResult",
+    "TerritorialScaleArea",
+    "TerritorialSelectionInput",
+    "VariableCalibrationMetric",
+    "VerificationStatus",
+    "ZoneTier",
+    "validate_provenance_integrity",
+]

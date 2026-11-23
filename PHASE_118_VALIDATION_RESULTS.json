@@ -1,0 +1,188 @@
+{
+  "santa_tecla_validation": {
+    "validation_id": "VAL_ST_SCHOOL_42",
+    "target_zone": "Entorno residencial Santa Tecla (El Paraíso / Cima del Paraíso / San Martín / Irlanda / La Misión)",
+    "district_official_population_2024": 125532,
+    "allocated_polygon_population": 4548,
+    "allocated_polygon_households": 1467,
+    "polygon_area_km2": 0.6306,
+    "influence_area_km2": 1.5304,
+    "contextual_area_km2": 3.6817,
+    "schools_discovered_total": 50,
+    "schools_in_primary": 1,
+    "schools_in_influence": 10,
+    "schools_in_contextual": 39,
+    "school_age_breakdown": {
+      "parvularia": {
+        "label": "Parvularia (4–6 años)",
+        "school_age_population": 365,
+        "estimated_attending": 277,
+        "not_attending_or_dropout_risk": 88,
+        "educational_lag_count": 0
+      },
+      "basica_ciclo_1": {
+        "label": "Básica 1.er Ciclo (7–9 años)",
+        "school_age_population": 247,
+        "estimated_attending": 247,
+        "not_attending_or_dropout_risk": 0,
+        "educational_lag_count": 46
+      },
+      "basica_ciclo_2": {
+        "label": "Básica 2.º Ciclo (10–12 años)",
+        "school_age_population": 281,
+        "estimated_attending": 264,
+        "not_attending_or_dropout_risk": 17,
+        "educational_lag_count": 38
+      },
+      "basica_ciclo_3": {
+        "label": "Básica 3.er Ciclo (13–15 años)",
+        "school_age_population": 189,
+        "estimated_attending": 163,
+        "not_attending_or_dropout_risk": 26,
+        "educational_lag_count": 29
+      },
+      "bachillerato": {
+        "label": "Bachillerato (16–18 años)",
+        "school_age_population": 168,
+        "estimated_attending": 122,
+        "not_attending_or_dropout_risk": 46,
+        "educational_lag_count": 8
+      }
+    },
+    "calibration": {
+      "status": "CALIBRATED_WITH_WARNINGS",
+      "srmse": 0.1034,
+      "statistical_coverage_pct": 100.0,
+      "evidence_classification": "SYNTHETIC_CALIBRATED"
+    },
+    "scenarios": [
+      {
+        "scenario_id": "ESCENARIO_1_BASELINE",
+        "title": "Sin nueva escuela (Situación base observada y sintética)",
+        "mean_walk_time_min": 7.55,
+        "share_within_15min": 1.0,
+        "levels_covered_in_primary_area": [],
+        "uncovered_local_demand_students": 1250,
+        "capacity_evidence_classification": "UNAVAILABLE",
+        "mobility_evidence_classification": "SYNTHETIC_CALIBRATED",
+        "note": "No se asumen capacidades reales de escuelas existentes por falta de registro MINEDUCYT por centro."
+      },
+      {
+        "scenario_id": "ESCENARIO_2_PARV_PRIMARIA",
+        "title": "Nueva escuela con Parvularia y Primaria (1.º a 6.º grado)",
+        "mean_walk_time_min": 6.31,
+        "share_within_15min": 1.0,
+        "levels_covered_in_primary_area": [
+          "parvularia",
+          "basica_ciclo_1",
+          "basica_ciclo_2"
+        ],
+        "local_demand_parv_prim": 893,
+        "uncovered_upper_levels_demand": 357,
+        "hypothetical_new_capacity": 320,
+        "capacity_evidence_classification": "HYPOTHESIS",
+        "mobility_evidence_classification": "SYNTHETIC_CALIBRATED",
+        "note": "Reduce distancia para parvularia y primaria, pero 3.er ciclo y bachillerato siguen dependiendo de escuelas externas."
+      },
+      {
+        "scenario_id": "ESCENARIO_3_COMPLETA_K12",
+        "title": "Nuevo centro escolar comunitario completo (Parvularia hasta Bachillerato)",
+        "mean_walk_time_min": 5.07,
+        "share_within_15min": 1.0,
+        "levels_covered_in_primary_area": [
+          "parvularia",
+          "basica_ciclo_1",
+          "basica_ciclo_2",
+          "basica_ciclo_3",
+          "bachillerato"
+        ],
+        "local_demand_all_levels": 1250,
+        "uncovered_upper_levels_demand": 0,
+        "hypothetical_new_capacity": 600,
+        "capacity_evidence_classification": "HYPOTHESIS",
+        "mobility_evidence_classification": "SYNTHETIC_CALIBRATED",
+        "note": "Cierra la brecha territorial de proximidad en los 5 niveles dentro del área residencial."
+      },
+      {
+        "scenario_id": "ESCENARIO_4_AMPLIACION_EXISTENTES",
+        "title": "Ampliación de capacidad en establecimientos existentes cercanos",
+        "mean_walk_time_min": 10.43,
+        "share_within_15min": 1.0,
+        "expanded_facilities_ids": [
+          "buildings:1382671840",
+          "pois_a:693629912",
+          "pois_a:378234934"
+        ],
+        "hypothetical_added_capacity": 180,
+        "capacity_evidence_classification": "HYPOTHESIS",
+        "mobility_evidence_classification": "SYNTHETIC_CALIBRATED",
+        "note": "Mitiga saturación hipotética en escuelas vecinas pero no reduce tiempos de caminata respecto al Escenario 1."
+      }
+    ],
+    "ledger_conservation": {
+      "conserved": true,
+      "message": "Conservation Verified: Cash total=$500000.00 (expected=$500000.00), Receivables=$0.00, Payables=$0.00",
+      "total_discrepancy_usd": 0.0,
+      "metrics": {
+        "total_cash": 500000.0,
+        "expected_cash": 500000.0,
+        "total_receivables": 0.0,
+        "total_payables": 0.0,
+        "credit_market_diff": 0.0,
+        "cash_conservation_diff": 0.0
+      }
+    },
+    "provenance_integrity": {
+      "valid": true,
+      "total_indicators": 10,
+      "counts_by_type": {
+        "PUBLIC_OFFICIAL": 1,
+        "DIRECT_OBSERVATION": 2,
+        "ESTIMATED_FROM_OFFICIAL": 2,
+        "SYNTHETIC_CALIBRATED": 3,
+        "SYNTHETIC_UNCALIBRATED": 0,
+        "DETERMINISTIC_MULTIPLIER": 0,
+        "HYPOTHESIS": 0,
+        "UNAVAILABLE": 2
+      },
+      "violations": []
+    },
+    "limitations": [
+      "No existen tabulados oficiales publicados localmente a granularidad CUSTOM_POLYGON; se utiliza SAE con incertidumbre ±24%.",
+      "Matrícula y capacidad instalada por centro escolar individual no importadas (UNAVAILABLE).",
+      "25 edificaciones OSM sin etiqueta específica (building=yes) asignadas probabilísticamente con incertidumbre explícita.",
+      "3 edificaciones no residenciales o incompatibles excluidas de asignación habitacional.",
+      "No se asume que cada establecimiento OSM ofrezca todos los niveles educativos desde parvularia hasta bachillerato.",
+      "La matrícula escolar no se confunde con la capacidad instalada ni con vacantes disponibles.",
+      "Capacidad instalada y vacantes reales por centro escolar son UNAVAILABLE (no se ha importado nómina nominal MINEDUCYT)."
+    ],
+    "elapsed_ms": 847.02
+  },
+  "scalability_benchmarks": {
+    "community_point": {
+      "elapsed_ms": 566.72,
+      "represented_population": 3797,
+      "sample_households": 250,
+      "srmse": 0.0655
+    },
+    "district_santa_tecla": {
+      "elapsed_ms": 1012.06,
+      "represented_population": 122596,
+      "sample_households": 400,
+      "is_weighted_cohort": true,
+      "srmse": 0.0889
+    },
+    "national_14_departments": {
+      "elapsed_ms": 900.32,
+      "departments_processed": 14,
+      "represented_population_total": 5856354,
+      "sample_households_total": 2100,
+      "mean_srmse": 0.1011,
+      "max_srmse": 0.1527
+    }
+  },
+  "memory_rss_mb": {
+    "start": 0.0,
+    "end": 0.0
+  }
+}

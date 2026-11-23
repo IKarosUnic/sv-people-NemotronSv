@@ -1,0 +1,49 @@
+{
+  "dataset_id": "mined_2024_macro",
+  "title": "Estadísticas Educativas Nacionales MINEDUCYT 2023–2024",
+  "source_institution": "Ministerio de Educación, Ciencia y Tecnología (MINEDUCYT) de El Salvador",
+  "source_url": "https://www.mined.gob.sv/",
+  "license": "Public Sector Information (LAIP El Salvador)",
+  "version": "2024.1",
+  "published_at": "2024-09-01",
+  "updated_at": "2024-09-01",
+  "reference_year": 2024,
+  "granularity_declared": [
+    "NATIONAL"
+  ],
+  "per_school_registry_loaded": false,
+  "unavailable_fields_locally": [
+    "matricula_por_centro_escolar",
+    "capacidad_instalada_por_aula",
+    "vacantes_disponibles_por_nivel",
+    "desercion_nominal_por_centro_escolar"
+  ],
+  "limitations": [
+    "El dataset incluido contiene agregados nacionales oficiales 2023–2024 de centros educativos y matrícula total.",
+    "La matrícula exacta, capacidad instalada y vacantes por establecimiento individual deben importarse mediante adaptador CSV/XLSX/JSON oficial de MINEDUCYT; en su ausencia permanecen marcadas como UNAVAILABLE."
+  ],
+  "national": {
+    "evidence_type": "PUBLIC_OFFICIAL",
+    "total_schools_2023": 6031,
+    "public_schools_2023": 5285,
+    "private_schools_2023": 746,
+    "total_schools_2024": 5885,
+    "public_schools_2024": 5162,
+    "private_schools_2024": 723,
+    "total_enrollment_2023": 1278795,
+    "total_enrollment_2024": 1276854,
+    "public_enrollment_share": 0.87,
+    "private_enrollment_share": 0.13
+  },
+  "level_structure_reference": {
+    "evidence_type": "ESTIMATED_FROM_OFFICIAL",
+    "levels": [
+      {"level_id": "parvularia", "label": "Educación Parvularia", "age_min": 4, "age_max": 6, "approx_national_enrollment": 210000},
+      {"level_id": "basica_ciclo_1", "label": "Básica 1.er Ciclo (1.º-3.º)", "age_min": 7, "age_max": 9, "approx_national_enrollment": 275000},
+      {"level_id": "basica_ciclo_2", "label": "Básica 2.º Ciclo (4.º-6.º)", "age_min": 10, "age_max": 12, "approx_national_enrollment": 270000},
+      {"level_id": "basica_ciclo_3", "label": "Básica 3.er Ciclo (7.º-9.º)", "age_min": 13, "age_max": 15, "approx_national_enrollment": 265000},
+      {"level_id": "bachillerato", "label": "Educación Media / Bachillerato", "age_min": 16, "age_max": 18, "approx_national_enrollment": 175000}
+    ],
+    "note": "Aproximación estructural de referencia basada en totales publicados MINEDUCYT; no sustituye matrícula nominal de centros específicos."
+  }
+}

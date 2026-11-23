@@ -1,0 +1,24 @@
+{
+  "dataset_id": "minsal_2024_macro",
+  "title": "Referencia Institucional de Establecimientos de Salud — MINSAL El Salvador",
+  "source_institution": "Ministerio de Salud (MINSAL) de El Salvador",
+  "source_url": "https://www.salud.gob.sv/",
+  "license": "Public Sector Information (LAIP El Salvador)",
+  "version": "2024.1",
+  "published_at": "2024-01-01",
+  "updated_at": "2024-01-01",
+  "reference_year": 2024,
+  "granularity_declared": [
+    "NATIONAL"
+  ],
+  "per_facility_registry_loaded": false,
+  "unavailable_fields_locally": [
+    "camas_hospitalarias_disponibles",
+    "consultorios_activos",
+    "personal_medico_por_establecimiento",
+    "horarios_verificados_unidad_salud"
+  ],
+  "limitations": [
+    "No se dispone de una base nominal local con capacidad instalada por establecimiento de salud MINSAL; la ubicación de hospitales, clínicas y farmacias proviene de OSM hasta que se importe registro oficial MINSAL vía adaptador."
+  ]
+}

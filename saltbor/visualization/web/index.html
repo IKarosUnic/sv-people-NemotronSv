@@ -6,6 +6,7 @@
     <title>SALTBOR — Plataforma de Simulación & Observabilidad de Sociedad Digital</title>
     <link rel="stylesheet" href="assets/maplibre/maplibre-gl.css">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="studio.css">
 </head>
 <body>
     <div id="app-container">
@@ -14,6 +15,7 @@
         <!-- ================================================================= -->
         <header id="control-center">
             <div class="brand-section">
+                <button id="btn-mobile-nav" class="btn btn-icon mobile-only-btn" title="Menú de Navegación">☰</button>
                 <div class="brand-logo">
                     <span class="logo-glyph">⬡</span>
                     <span class="logo-title">SALTBOR</span>
@@ -110,6 +112,7 @@
 
                 <button id="btn-save-checkpoint" class="btn btn-icon" title="Guardar Checkpoint SQLite">💾</button>
                 <button id="btn-load-checkpoint" class="btn btn-icon" title="Cargar Checkpoint SQLite">📂</button>
+                <button id="btn-open-studio-settings" class="btn btn-icon" title="Configuración de IA y Privacidad (Gemini BYOK / Ollama / Offline)">⚙️</button>
                 <button id="btn-theme-toggle" class="btn btn-icon" title="Alternar Modo Oscuro / Claro">🌓</button>
                 <button id="btn-toggle-ui" class="btn btn-sm btn-secondary" title="Ocultar toda la interfaz (Modo Pantalla Completa) [Tecla H]" style="display:flex; align-items:center; gap:4px;">
                     <span>👁️</span> <span>Ocultar Interfaz</span>
@@ -130,7 +133,11 @@
             <!-- Left Navigation Sidebar -->
             <nav id="sidebar">
                 <ul class="nav-list">
-                    <li class="nav-item active" data-view="world">
+                    <li class="nav-item active" data-view="studio">
+                        <span class="nav-icon">💬</span>
+                        <span class="nav-title">Estudio Territorial IA</span>
+                    </li>
+                    <li class="nav-item" data-view="world">
                         <span class="nav-icon">🗺️</span>
                         <span class="nav-title">Territorio & SIG Cartográfico</span>
                     </li>
@@ -196,8 +203,125 @@
 
             <!-- Main Dynamic Viewport -->
             <main id="viewport">
+                <!-- 0. CONVERSATIONAL TERRITORIAL SIMULATION STUDIO (PRIMARY ENTRY) -->
+                <section id="view-studio" class="view-panel active">
+                    <div id="studio-shell" class="studio-shell map-hidden">
+                        <!-- Left Conversation History Drawer -->
+                        <aside id="studio-history-drawer" class="studio-history-drawer" aria-label="Historial de escenarios">
+                            <div class="studio-history-header">
+                                <div class="studio-history-title-row">
+                                    <span>Escenarios &amp; Consultas</span>
+                                </div>
+                                <button id="studio-btn-new-chat" class="btn btn-sm btn-primary studio-btn-touch" type="button" style="width:100%;">+ Nueva Consulta</button>
+                            </div>
+                            <div id="studio-history-list" class="studio-history-list"></div>
+                        </aside>
+
+                        <!-- Primary Conversational Workspace -->
+                        <div class="studio-chat-pane">
+                            <header class="studio-chat-header">
+                                <div class="studio-chat-header-left">
+                                    <button id="studio-btn-toggle-history" class="btn btn-sm btn-secondary" type="button" title="Mostrar/Ocultar Historial">🗂️ Historial</button>
+                                    <span id="studio-active-context-pill" class="studio-context-pill">📍 El Salvador</span>
+                                </div>
+                                <div class="studio-chat-header-right">
+                                    <button id="studio-provider-pill" class="studio-provider-pill" type="button" data-status="OFFLINE_MODE" title="Configurar Proveedor de IA (Gemini BYOK / Ollama / Offline)">⚙️ Modo Offline activo</button>
+                                    <button id="studio-btn-export-report" class="btn btn-sm btn-secondary" type="button" style="display:none;" title="Exportar informe en Markdown">📄 Exportar Informe</button>
+                                    <button id="studio-btn-toggle-map" class="btn btn-sm btn-secondary" type="button" title="Abrir u ocultar mapa opcional">🗺️ Mapa Opcional</button>
+                                </div>
+                            </header>
+
+                            <div id="studio-messages-scroll" class="studio-messages-scroll">
+                                <div id="studio-thread" class="studio-thread"></div>
+                            </div>
+
+                            <div id="studio-progress-banner" class="studio-progress-banner" role="status" aria-live="polite">
+                                <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                                    <div class="studio-spinner"></div>
+                                    <span id="studio-progress-text" style="font-size:12.5px; font-weight:600; color:var(--text-primary);">Ejecutando simulación en SALTBOR...</span>
+                                </div>
+                                <button id="studio-btn-cancel-job" class="btn btn-sm btn-secondary" type="button" style="color:var(--accent-rose);">Cancelar</button>
+                            </div>
+
+                            <footer class="studio-composer-wrap">
+                                <div class="studio-composer-box">
+                                    <div class="studio-composer-tools">
+                                        <div class="studio-location-input-wrap">
+                                            <input id="studio-location-search" class="studio-input-sm" type="search" placeholder="Buscar municipio, distrito, cantón o lugar en El Salvador..." autocomplete="off" aria-label="Buscar lugar en El Salvador">
+                                            <div id="studio-location-autocomplete" class="studio-autocomplete-menu" role="listbox"></div>
+                                        </div>
+                                        <button id="studio-btn-pick-point" class="btn btn-sm btn-secondary studio-btn-touch" type="button" title="Adjuntar un punto geográfico desde el mapa opcional">📍 Adjuntar punto</button>
+                                        <button id="studio-btn-clear-point" class="btn btn-sm btn-secondary" type="button" style="display:none;" title="Quitar punto fijado">✕ Limpiar punto</button>
+                                        <button id="studio-btn-toggle-advanced" class="btn btn-sm btn-secondary" type="button" title="Opciones avanzadas de horizonte temporal">⏱️ Horizonte</button>
+                                    </div>
+
+                                    <div id="studio-advanced-row" class="studio-advanced-row">
+                                        <label for="studio-days-override">Duración explícita opcional (días):</label>
+                                        <input id="studio-days-override" class="studio-input-sm" type="number" min="1" max="1095" placeholder="Automático según lenguaje natural" style="width:220px;">
+                                    </div>
+
+                                    <div class="studio-composer-main">
+                                        <textarea id="studio-chat-input" class="studio-textarea" rows="2" placeholder="Describe tu idea, problema comunitario o pregunta sobre cualquier lugar de El Salvador..."></textarea>
+                                        <button id="studio-btn-send" class="btn btn-primary studio-btn-touch" type="button">Enviar</button>
+                                    </div>
+                                </div>
+                            </footer>
+                        </div>
+
+                        <!-- Optional Contextual National Map Drawer -->
+                        <aside class="studio-map-drawer" aria-label="Mapa Territorial Opcional">
+                            <div class="studio-map-header">
+                                <span style="font-size:12px; font-weight:700; color:var(--text-primary);">🇸🇻 Explorador Territorial</span>
+                                <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                                    <button id="studio-map-mode-hidden" class="btn btn-sm btn-secondary studio-map-mode-btn" type="button">Ocultar</button>
+                                    <button id="studio-map-mode-side" class="btn btn-sm btn-primary studio-map-mode-btn" type="button">Lateral</button>
+                                    <button id="studio-map-mode-expanded" class="btn btn-sm btn-secondary studio-map-mode-btn" type="button">Amplio</button>
+                                    <button id="studio-map-mode-full" class="btn btn-sm btn-secondary studio-map-mode-btn" type="button">Completo</button>
+                                </div>
+                            </div>
+                            <div id="studio-explorer-toolbar" class="studio-explorer-toolbar">
+                                <div class="studio-explorer-row">
+                                    <button id="studio-btn-draw-polygon" class="btn btn-sm btn-secondary" type="button" title="Dibujar polígono en el mapa (clic para vértices, doble clic o finalizar)">⬠ Dibujar Polígono</button>
+                                    <button id="studio-btn-finish-polygon" class="btn btn-sm btn-primary" type="button" style="display:none;">✓ Cerrar Polígono</button>
+                                    <button id="studio-btn-clear-polygon" class="btn btn-sm btn-secondary" type="button" style="display:none;">✕ Limpiar</button>
+                                    <select id="studio-travel-time-select" class="studio-input-sm" aria-label="Tiempo de desplazamiento">
+                                        <option value="5">5 min</option>
+                                        <option value="10">10 min</option>
+                                        <option value="15" selected>15 min</option>
+                                        <option value="20">20 min</option>
+                                        <option value="custom">Personalizado</option>
+                                    </select>
+                                    <input id="studio-travel-time-custom" class="studio-input-sm" type="number" min="3" max="90" value="25" style="width:62px; display:none;" title="Minutos personalizados">
+                                    <select id="studio-sector-select" class="studio-input-sm" aria-label="Sector de intervención">
+                                        <option value="general">General</option>
+                                        <option value="school">Escuela / Educación</option>
+                                        <option value="health">Salud</option>
+                                        <option value="market">Mercado / Comercio</option>
+                                        <option value="road">Carretera / Movilidad</option>
+                                    </select>
+                                    <button id="studio-btn-discover-territory" class="btn btn-sm btn-primary" type="button">🔍 Analizar Área</button>
+                                    <button id="studio-btn-expand-area" class="btn btn-sm btn-secondary" type="button" title="Ampliar radio contextual (+10 min)">↗ Ampliar</button>
+                                </div>
+                                <div class="studio-explorer-layers">
+                                    <label><input type="checkbox" data-studio-layer="primary" checked> Principal</label>
+                                    <label><input type="checkbox" data-studio-layer="influence" checked> Influencia</label>
+                                    <label><input type="checkbox" data-studio-layer="contextual" checked> Contextual</label>
+                                    <label><input type="checkbox" data-studio-layer="population" checked> Población Sintética</label>
+                                    <label><input type="checkbox" data-studio-layer="infrastructure" checked> Servicios/Infra</label>
+                                    <label><input type="checkbox" data-studio-layer="barriers" checked> Barreras</label>
+                                </div>
+                            </div>
+                            <div id="studio-map-canvas-host" class="studio-map-canvas-host"></div>
+                            <div id="studio-explorer-inspector" class="studio-explorer-inspector" style="display:none;"></div>
+                            <div class="studio-map-footer">
+                                <span id="studio-map-coords-label">El Salvador · Mapa cargado bajo demanda sin bloquear el chat</span>
+                            </div>
+                        </aside>
+                    </div>
+                </section>
+
                 <!-- 1. REAL GIS TERRITORIAL & URBAN CARTOGRAPHY (PRIMARY MAP) -->
-                <section id="view-world" class="view-panel active">
+                <section id="view-world" class="view-panel">
                     <div class="gis-layout">
                         <!-- Fullscreen MapLibre WebGL Viewport -->
                         <div id="maplibre-viewport"></div>
@@ -231,6 +355,7 @@
                                 </select>
                             </div>
                             <div class="gis-control-group">
+                                <button id="btn-return-to-studio" class="btn btn-sm btn-primary" type="button" style="display:none;" title="Volver al Estudio Conversacional">💬 Volver al Estudio</button>
                                 <button id="btn-toggle-gis-layers-panel" class="btn btn-sm btn-secondary" title="Mostrar/Ocultar Panel Lateral de Capas">📑 Capas</button>
                                 <button id="btn-clean-view" class="btn btn-sm btn-secondary" title="Alternar Modo Vista Limpia (Oculta badges y paneles flotantes)" style="color:#a78bfa; font-weight:600;">🧹 Vista Limpia</button>
                                 <button id="btn-zen-mode" class="btn btn-sm btn-secondary" title="Modo Pantalla Completa Limpio (Ocultar Interfaz) [Tecla H]" style="color:#38bdf8; font-weight:700;">👁️ Ocultar UI [H]</button>
@@ -2323,9 +2448,69 @@
         </div>
     </div>
 
+    <!-- SALTBOR Studio AI Provider & Privacy Settings Modal (BYOK / Ollama / Offline) -->
+    <div id="studio-settings-modal" class="studio-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="studio-settings-title">
+        <div class="studio-modal">
+            <div class="studio-modal-header">
+                <h2 id="studio-settings-title" style="font-size:15px; font-weight:700; color:var(--text-primary); margin:0;">Configuración de IA &amp; Privacidad (BYOK)</h2>
+                <button id="studio-settings-close" class="btn btn-sm btn-secondary" type="button" aria-label="Cerrar configuración">✕</button>
+            </div>
+
+            <div id="studio-setting-status-text" style="font-size:12px; color:var(--accent-sky); font-weight:600; padding:8px 10px; background:var(--bg-base); border:1px solid var(--border-subtle); border-radius:var(--radius-sm);">
+                Cargando estado del proveedor...
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:10px; font-size:12px;">
+                <label style="display:flex; flex-direction:column; gap:4px;">
+                    <span style="font-weight:600; color:var(--text-secondary);">Modo de Inteligencia Territorial</span>
+                    <select id="studio-setting-provider-mode" class="studio-input-sm">
+                        <option value="offline">Modo Offline (100% determinístico local, sin red)</option>
+                        <option value="ollama">Ollama Local (LLM privado en este equipo)</option>
+                        <option value="gemini">Gemini API (BYOK — interpretación conversacional)</option>
+                    </select>
+                </label>
+
+                <label style="display:flex; flex-direction:column; gap:4px;">
+                    <span style="font-weight:600; color:var(--text-secondary);">Clave Gemini API (BYOK, solo en memoria del backend)</span>
+                    <input id="studio-setting-gemini-key" class="studio-input-sm" type="password" autocomplete="off" placeholder="Pega tu clave AIza... (nunca se guarda en frontend)">
+                    <span id="studio-setting-key-masked" style="font-size:11px; color:var(--text-muted);">Sin clave configurada (BYOK opcional)</span>
+                </label>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <label style="display:flex; flex-direction:column; gap:4px;">
+                        <span style="font-weight:600; color:var(--text-secondary);">Modelo Gemini Flash-Lite (triaje)</span>
+                        <input id="studio-setting-flash-lite-model" class="studio-input-sm" type="text" placeholder="gemini-2.5-flash-lite">
+                    </label>
+                    <label style="display:flex; flex-direction:column; gap:4px;">
+                        <span style="font-weight:600; color:var(--text-secondary);">Modelo Gemini Flash (síntesis)</span>
+                        <input id="studio-setting-flash-model" class="studio-input-sm" type="text" placeholder="gemini-2.5-flash">
+                    </label>
+                </div>
+
+                <label style="display:flex; flex-direction:column; gap:4px;">
+                    <span style="font-weight:600; color:var(--text-secondary);">Modelo Ollama Local</span>
+                    <input id="studio-setting-ollama-model" class="studio-input-sm" type="text" placeholder="qwen2.5:7b-instruct">
+                </label>
+
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; padding-top:4px;">
+                    <input id="studio-setting-strict-privacy" type="checkbox" checked>
+                    <span style="color:var(--text-secondary);">Minimizar contexto territorial y redactar identificadores antes de llamadas remotas</span>
+                </label>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; border-top:1px solid var(--border-subtle); padding-top:10px;">
+                <button id="studio-settings-clear-key" class="btn btn-sm btn-secondary" type="button" style="color:var(--accent-rose);">Borrar clave Gemini</button>
+                <div style="display:flex; gap:8px;">
+                    <button id="studio-settings-save" class="btn btn-sm btn-primary" type="button">Guardar configuración</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Core Interactive Application Script -->
     <script src="assets/maplibre/maplibre-gl.js"></script>
     <script src="app.js"></script>
     <script type="module" src="modules/live_bridge_observatory.js"></script>
+    <script type="module" src="modules/territorial_studio.js"></script>
 </body>
 </html>

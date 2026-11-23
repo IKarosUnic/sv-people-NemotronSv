@@ -92,15 +92,28 @@ class IntegratedWorldSimulationEngine:
             self._consolidate_historical_events(current_tick)
             self._last_historical_consolidation_tick = current_tick
 
+    def _default_coords(self) -> Tuple[float, float]:
+        cfg = getattr(self.runner, "config", None)
+        if cfg is not None and getattr(cfg, "center_lat", None) is not None and getattr(cfg, "center_lon", None) is not None:
+            return (float(cfg.center_lat), float(cfg.center_lon))
+        return (13.6980, -89.1950)
+
     def _evaluate_environmental_impacts(self, current_tick: Tick, rain_mm: float) -> None:
         """Propagate weather extremes to road blockages and physical wear."""
         if rain_mm > 15.0 and current_tick > self._active_blockage_cooldown:
             # Tropical storm triggering a flood in quebradas or landslide
             self._active_blockage_cooldown = current_tick + 48  # 12-hour cooldown
 
-            # Blockage at low-lying river road or mountain pass
-            loc_name = "Quebrada El Zapote / Calle Rubén Darío"
-            lat, lon = (13.6980, -89.1950)
+            cfg = getattr(self.runner, "config", None)
+            scope = getattr(cfg, "territory_scope", None) if cfg else None
+            if scope and getattr(cfg, "territory_mode", "on_demand") != "historic_center_benchmark":
+                loc_name = f"Corredor vial local — {scope}"
+                loc_id = f"corredor_{(getattr(cfg, 'territory_district_id', None) or 'local').lower()}"
+                lat, lon = self._default_coords()
+            else:
+                loc_name = "Quebrada El Zapote / Calle Rubén Darío"
+                loc_id = "quebrada_el_zapote"
+                lat, lon = (13.6980, -89.1950)
             b = self.transportation.register_blockage(
                 cause="Inundación por tormenta tropical",
                 location_name=loc_name,
@@ -116,7 +129,7 @@ class IntegratedWorldSimulationEngine:
                 evt = SimulationEvent(
                     event_type=EventType.ROAD_BLOCKED,
                     tick=current_tick,
-                    location_id="quebrada_el_zapote",
+                    location_id=loc_id,
                     data={
                         "cause": b.cause,
                         "location": loc_name,
@@ -180,18 +193,27 @@ class IntegratedWorldSimulationEngine:
             if curr_j.status == JourneyStatus.IN_PROGRESS:
                 return False, f"El agente ya se encuentra viajando hacia {curr_j.destination_location_id}"
 
-        # Resolve coordinates
+        # Resolve coordinates (use San Salvador Centro anchors when running the Historic Center benchmark)
+        cfg = getattr(self.runner, "config", None)
+        mode_tag = getattr(cfg, "territory_mode", "on_demand") if cfg else "on_demand"
         coords_engine = getattr(self.runner, "extension", None)
-        orig_coords = (
-            coords_engine.coordinates_for(origin_loc_id)
-            if coords_engine
-            else (13.6978, -89.1915)
-        )
-        dest_coords = (
-            coords_engine.coordinates_for(destination_loc_id)
-            if coords_engine
-            else (13.6980, -89.1925)
-        )
+        fallback_coords = self._default_coords()
+        if mode_tag == "historic_center_benchmark":
+            from saltbor.world.gis.simulation_adapter import get_anchor_point
+
+            orig_coords = get_anchor_point(origin_loc_id)[:2]
+            dest_coords = get_anchor_point(destination_loc_id)[:2]
+        else:
+            orig_coords = (
+                coords_engine.coordinates_for(origin_loc_id)
+                if coords_engine
+                else fallback_coords
+            )
+            dest_coords = (
+                coords_engine.coordinates_for(destination_loc_id)
+                if coords_engine
+                else fallback_coords
+            )
 
         # Plan journey
         journey = self.transportation.plan_journey(

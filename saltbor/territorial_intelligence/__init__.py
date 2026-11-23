@@ -1,0 +1,105 @@
+"""SALTBOR Phase 1.17 — National Territorial Intelligence & On-Demand Spatial Simulation Package."""
+
+from saltbor.territorial_intelligence.building_and_landuse import (
+    NationalBuildingIntelligenceEngine,
+    TerritorialLandUseIntelligenceEngine,
+)
+from saltbor.territorial_intelligence.catchment import TerritorialCatchmentAnalysisEngine
+from saltbor.territorial_intelligence.commercial_intelligence import (
+    BusinessDistributionEngine,
+    CommercialActivityIntelligenceEngine,
+    TerritorialEconomicContextEngine,
+)
+from saltbor.territorial_intelligence.coverage import NationalTerritorialCoverageRegistry
+from saltbor.territorial_intelligence.employment import (
+    EmploymentOpportunityAnalysisEngine,
+    TerritorialLaborMarketEngine,
+)
+from saltbor.territorial_intelligence.evidence import TerritorialEvidenceEngine
+from saltbor.territorial_intelligence.mobility_flow import (
+    HumanMobilityFlowEngine,
+    PopulationFlowEvidenceEngine,
+    TerritorialPopulationDistributionEngine,
+)
+from saltbor.territorial_intelligence.on_demand_engine import OnDemandTerritorialSimulationEngine
+from saltbor.territorial_intelligence.population_distribution import DynamicPopulationDistributionEngine
+from saltbor.territorial_intelligence.schemas import (
+    BuildingIntelligenceReport,
+    BuildingRecord,
+    BuildingUseCategory,
+    CatchmentAreaResult,
+    CatchmentMethod,
+    CatchmentScale,
+    ClassificationOrigin,
+    CommercialCategory,
+    CommercialConcentrationMetrics,
+    CommercialContextReport,
+    CommercialEstablishmentRecord,
+    CoverageTier,
+    DayType,
+    EmploymentAnalysisReport,
+    EmploymentEvidenceTier,
+    EmploymentInterventionResult,
+    EpistemicTier,
+    FlowEvidenceTier,
+    LandUseIntelligenceReport,
+    MobilityCorridor,
+    MobilityRole,
+    NationalCoverageSummary,
+    OnDemandScenarioRecord,
+    PopulationFlowReport,
+    TerritorialCoverageRecord,
+    TerritorialEvidenceIndicator,
+    TerritorialEvidencePackage,
+    TerritorialSimulationState,
+    TimePeriod,
+    UnverifiedCommercialBuilding,
+)
+
+__all__ = [
+    "BuildingIntelligenceReport",
+    "BuildingRecord",
+    "BuildingUseCategory",
+    "BusinessDistributionEngine",
+    "CatchmentAreaResult",
+    "CatchmentMethod",
+    "CatchmentScale",
+    "ClassificationOrigin",
+    "CommercialActivityIntelligenceEngine",
+    "CommercialCategory",
+    "CommercialConcentrationMetrics",
+    "CommercialContextReport",
+    "CommercialEstablishmentRecord",
+    "CoverageTier",
+    "DayType",
+    "DynamicPopulationDistributionEngine",
+    "EmploymentAnalysisReport",
+    "EmploymentEvidenceTier",
+    "EmploymentInterventionResult",
+    "EmploymentOpportunityAnalysisEngine",
+    "EpistemicTier",
+    "FlowEvidenceTier",
+    "HumanMobilityFlowEngine",
+    "LandUseIntelligenceReport",
+    "MobilityCorridor",
+    "MobilityRole",
+    "NationalBuildingIntelligenceEngine",
+    "NationalCoverageSummary",
+    "NationalTerritorialCoverageRegistry",
+    "OnDemandScenarioRecord",
+    "OnDemandTerritorialSimulationEngine",
+    "PopulationFlowEvidenceEngine",
+    "PopulationFlowReport",
+    "TerritorialCatchmentAnalysisEngine",
+    "TerritorialCoverageRecord",
+    "TerritorialEconomicContextEngine",
+    "TerritorialEvidenceEngine",
+    "TerritorialEvidenceIndicator",
+    "TerritorialEvidencePackage",
+    "TerritorialLaborMarketEngine",
+    "TerritorialLandUseIntelligenceEngine",
+    "TerritorialPopulationDistributionEngine",
+    "TerritorialSimulationState",
+    "TimePeriod",
+    "UnverifiedCommercialBuilding",
+]
