@@ -468,12 +468,41 @@ def main() -> int:
     sim_parser.add_argument("--listar", action="store_true", help="Listar los eventos preconfigurados listos para usar")
     sim_parser.add_argument("--seed", type=int, default=42, help="Semilla aleatoria reproducible")
 
+    # sync command (Phase 1.20 Offline-First ETL Sync)
+    sync_parser = subparsers.add_parser("sync", help="Sincronización ETL offline-first de fuentes territoriales y censales")
+    sync_parser.add_argument("action", choices=["status", "run"], help="Consultar estado ('status') o ejecutar ETL ('run')")
+    sync_parser.add_argument("--source", type=str, default="censo_2024_districts", help="Fuente: osm_geofabrik, censo_2024_districts, ehpm, mined_schools, minsal_health, institutional_custom")
+    sync_parser.add_argument("--file", type=str, default=None, help="Ruta local a CSV, XLSX, JSON o GeoJSON")
+    sync_parser.add_argument("--url", type=str, default=None, help="URL oficial allowlisted (requiere --online)")
+    sync_parser.add_argument("--online", action="store_true", help="Permitir descarga explícita desde dominios oficiales")
+    sync_parser.add_argument("--force", action="store_true", help="Forzar re-descarga de Geofabrik OSM")
+
     args = parser.parse_args()
 
     if args.command == "serve":
         return cmd_serve(args)
     elif args.command == "simular":
         return cmd_simular(args)
+    elif args.command == "sync":
+        import json
+        from saltbor.data_sync.etl_sync import NationalDataSyncManager
+
+        mgr = NationalDataSyncManager()
+        try:
+            if args.action == "status":
+                print(json.dumps(mgr.get_sync_status(), indent=2, ensure_ascii=False))
+                return 0
+            res = mgr.sync_source(
+                source_kind=args.source,
+                local_file=args.file,
+                source_url=args.url,
+                allow_online=args.online,
+                force=args.force,
+            )
+            print(json.dumps(res, indent=2, ensure_ascii=False))
+            return 0 if res.get("success", False) else 1
+        finally:
+            mgr.close()
     elif args.command == "run" or args.command is None:
         if args.command is None:
             # Default to running 96 ticks

@@ -73,6 +73,17 @@ class TerritorialPreparationPipeline:
         self.mobility_engine = HumanMobilityAccessibilityEngine()
         self.sector_engine = SectorSpecificContextEngine()
 
+        from saltbor.data_sync.enrichment import MissingDataEnrichmentTool
+        from saltbor.data_sync.etl_sync import NationalDataSyncManager
+
+        self.enrichment_tool = MissingDataEnrichmentTool(cache=self.discovery_engine.cache)
+        self.discovery_engine._enrichment_tool = self.enrichment_tool
+        self.sync_manager = NationalDataSyncManager(
+            census_engine=self.census_engine,
+            geography_path=self.geography.path,
+            cache=self.discovery_engine.cache,
+        )
+
     def close(self) -> None:
         self.discovery_engine.close()
         if self._owns_territorial:
@@ -132,6 +143,39 @@ class TerritorialPreparationPipeline:
 
         # 5. Infrastructure & Service Discovery across 3 scales
         inventory = self.infrastructure_engine.discover_inventory(discovery=discovery)
+        sec = (selection.sector or "general").lower()
+        if sec in ("school", "education"):
+            local_sec_count = inventory.counts_by_domain.get("EDUCATION", 0)
+        elif sec in ("health", "clinic"):
+            local_sec_count = inventory.counts_by_domain.get("HEALTH", 0)
+        elif sec in ("market", "business"):
+            local_sec_count = inventory.counts_by_domain.get("ECONOMY", 0)
+        elif sec in ("road", "transit"):
+            local_sec_count = inventory.counts_by_domain.get("INFRASTRUCTURE", 0)
+        else:
+            local_sec_count = len(inventory.entities)
+
+        allow_online = bool(selection.allow_online_osm or selection.allow_online_fallback)
+        overpass_res = self.enrichment_tool.fetch_overpass_bbox_if_sparse(
+            bbox=tuple(discovery.expansion.contextual_area.bbox),  # type: ignore[arg-type]
+            sector=selection.sector,
+            local_feature_count=local_sec_count,
+            min_threshold=2,
+            allow_online=allow_online,
+        )
+        extra_feats = overpass_res.get("features") or []
+        if extra_feats:
+            inventory = self.infrastructure_engine.discover_inventory(
+                discovery=discovery,
+                extra_osm_features=extra_feats,
+            )
+
+        enrichment_summary = {
+            **(discovery.enrichment_summary or {}),
+            "overpass": {k: v for k, v in overpass_res.items() if k != "features"},
+            "overpass_features_injected": len(extra_feats),
+            "allow_online_fallback": allow_online,
+        }
 
         # 6. Human Mobility & Accessibility connecting households to services
         mobility = self.mobility_engine.analyze_accessibility(
@@ -212,5 +256,6 @@ class TerritorialPreparationPipeline:
             mobility_accessibility=mobility,
             provenanced_indicators=indicators,
             provenance_integrity=integrity,
+            enrichment_summary=enrichment_summary,
             elapsed_ms=elapsed_ms,
         )

@@ -79,6 +79,7 @@ class InfrastructureServiceDiscoveryEngine:
     def discover_inventory(
         self,
         discovery: DiscoveredTerritorialContext,
+        extra_osm_features: Optional[List[Dict[str, Any]]] = None,
     ) -> InfrastructureInventory:
         """Discover infrastructure & services across Primary, Influence & Contextual scales."""
         exp = discovery.expansion
@@ -318,6 +319,42 @@ class InfrastructureServiceDiscoveryEngine:
                         ),
                     )
                 )
+
+        # 5b. Merge optional cached Overpass enrichment POIs (ODbL-1.0)
+        for ex_feat in extra_osm_features or []:
+            elat = ex_feat.get("lat")
+            elon = ex_feat.get("lon")
+            if elat is None or elon is None:
+                continue
+            zt = _zone_tier(float(elon), float(elat)) or ZoneTier.CONTEXTUAL_AREA
+            dist_m = round(haversine_m(discovery.center_lat, discovery.center_lon, float(elat), float(elon)), 1)
+            if dist_m > 12_000:
+                continue
+            dom = str(ex_feat.get("domain") or "INFRASTRUCTURE")
+            sub = str(ex_feat.get("subtype") or "poi")
+            tags = ex_feat.get("tags") or {}
+            levels, levels_status = _extract_levels(tags) if dom == "EDUCATION" else ([], "UNVERIFIED")
+            raw_candidates.append(
+                InfrastructureEntity(
+                    entity_id=str(ex_feat.get("entity_id") or f"overpass:{sub}:{elat}:{elon}"),
+                    name=str(ex_feat.get("name") or sub),
+                    domain=dom,
+                    subtype=sub,
+                    lat=round(float(elat), 6),
+                    lon=round(float(elon), 6),
+                    zone_tier=zt,
+                    distance_m=dist_m,
+                    estimated_walk_min=round((dist_m * circuity) / max(1.0, walk_m_per_min), 1),
+                    estimated_drive_min=round((dist_m * circuity) / max(1.0, drive_m_per_min), 1),
+                    source=str(ex_feat.get("source") or "OpenStreetMap Overpass (Cached ODbL-1.0)"),
+                    updated_at=str(ex_feat.get("updated_at") or "2026"),
+                    verification_status=VerificationStatus.OSM_IDENTIFIED,
+                    confidence_level=0.72,
+                    confirmed_levels=levels,
+                    levels_evidence_status=levels_status,
+                    capacity_evidence_type=EvidenceClassification.UNAVAILABLE,
+                )
+            )
 
         # 6. Deduplicate spatial + name matches within 60m per domain
         # Prioritize OFFICIAL_CONFIRMED > OSM_IDENTIFIED > UNVERIFIED

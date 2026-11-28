@@ -29,6 +29,8 @@ from saltbor.census_intelligence.schemas import (
     CensusImportResult,
     CensusQueryResult,
     CensusVariableRecord,
+    CongestionAnalysisResult,
+    CorridorLineInput,
     DiscoveredTerritorialContext,
     EvidenceClassification,
     GeographicGranularity,
@@ -39,7 +41,10 @@ from saltbor.census_intelligence.schemas import (
     PopulationAllocationResult,
     PopulationPreparationCertificate,
     ProvenancedIndicator,
+    RoadSegmentLoad,
     SectorContextReport,
+    SiteMarker,
+    SiteRole,
     SmallAreaEstimate,
     SyntheticHousehold,
     SyntheticPerson,
@@ -48,10 +53,16 @@ from saltbor.census_intelligence.schemas import (
     TerritorialPreparationResult,
     TerritorialScaleArea,
     TerritorialSelectionInput,
+    TransitSimulationResult,
+    TransitStopCandidate,
     VariableCalibrationMetric,
     VerificationStatus,
     ZoneTier,
     validate_provenance_integrity,
+)
+from saltbor.census_intelligence.transit_congestion import (
+    RoadCongestionEstimator,
+    TransitOptimizationEngine,
 )
 from saltbor.census_intelligence.sector_context import (
     EducationSectorAnalyzer,

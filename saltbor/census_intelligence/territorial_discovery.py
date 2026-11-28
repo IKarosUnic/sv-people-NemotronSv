@@ -23,7 +23,7 @@ import urllib.parse
 import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 
-from shapely.geometry import Point, Polygon, MultiPolygon, mapping, shape
+from shapely.geometry import MultiPoint, Point, Polygon, MultiPolygon, mapping, shape
 from shapely.ops import unary_union
 
 from saltbor.conversational.territorial_context import NationalTerritorialContextEngine
@@ -618,6 +618,8 @@ class TerritorialContextDiscoveryEngine:
             return model
 
         osm_adapter = RateLimitedOSMAdapter(cache=self.cache, allow_online=selection.allow_online_osm)
+        allow_online = bool(selection.allow_online_osm or selection.allow_online_fallback)
+        enrichment_summary: Dict[str, Any] = {}
         primary_geom: Any = None
         mode: str = "administrative_query"
         center_lat = selection.lat
@@ -633,16 +635,34 @@ class TerritorialContextDiscoveryEngine:
             c = primary_geom.centroid
             center_lat, center_lon = float(c.y), float(c.x)
             mode = "polygon"
+        elif selection.sites:
+            pts = [Point(s.lon, s.lat) for s in selection.sites]
+            if len(pts) == 1:
+                center_lat, center_lon = selection.sites[0].lat, selection.sites[0].lon
+                primary_geom = _circle_polygon_wgs84(center_lat, center_lon, radius_km=0.35)
+                mode = "point"
+            else:
+                hull = MultiPoint(pts).convex_hull
+                primary_geom = _expand_polygon_buffer_km(hull, 0.28)
+                c = primary_geom.centroid
+                center_lat, center_lon = float(c.y), float(c.x)
+                mode = "polygon"
         elif center_lat is not None and center_lon is not None:
             mode = "point"
             primary_geom = _circle_polygon_wgs84(center_lat, center_lon, radius_km=0.25)
         elif selection.query:
-            # Resolve locally first, fallback to optional Nominatim if online allowed and unresolved
+            # Resolve locally first, fallback to cached/optional Nominatim enrichment if unresolved
             ctx_try = self.territorial_engine.resolve_location(query=selection.query)
-            if not ctx_try.resolved and selection.allow_online_osm:
-                nom = osm_adapter.geocode_nominatim(selection.query)
-                if nom:
-                    center_lat, center_lon = nom["lat"], nom["lon"]
+            if not ctx_try.resolved:
+                from saltbor.data_sync.enrichment import MissingDataEnrichmentTool
+
+                enr_tool = getattr(self, "_enrichment_tool", None) or MissingDataEnrichmentTool(cache=self.cache)
+                nom_res = enr_tool.geocode_if_missing(selection.query, allow_online=allow_online)
+                enrichment_summary["nominatim"] = nom_res
+                if nom_res.get("found"):
+                    center_lat, center_lon = float(nom_res["lat"]), float(nom_res["lon"])
+                    mode = "point"
+                    primary_geom = _circle_polygon_wgs84(center_lat, center_lon, radius_km=0.35)
 
         geo_ctx = self.territorial_engine.resolve_location(
             query=selection.query if center_lat is None else None,
@@ -721,8 +741,9 @@ class TerritorialContextDiscoveryEngine:
             expansion=expansion,
             osm_attribution=OSM_ODBL_ATTRIBUTION,
             cache_hit=False,
-            offline_mode=not selection.allow_online_osm,
+            offline_mode=not allow_online,
             missing_geographic_info=list(geo_ctx.missing_data),
+            enrichment_summary=enrichment_summary,
         )
         self.cache.put(f"disc:{sel_hash}", "local_discovery", result.model_dump(mode="json"))
         return result

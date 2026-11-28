@@ -60,6 +60,35 @@ class MobilityEvidenceType(str, enum.Enum):
     SYNTHETIC_MOBILITY = "SYNTHETIC_MOBILITY"
 
 
+class SiteRole(str, enum.Enum):
+    """Supported roles for multi-site user map placement (Phase 1.19)."""
+
+    ORIGIN = "origin"
+    DESTINATION = "destination"
+    PROPOSED_STOP = "proposed_stop"
+    PROPOSED_SERVICE = "proposed_service"
+    CONGESTION_HOTSPOT = "congestion_hotspot"
+
+
+class SiteMarker(BaseModel):
+    """A user-placed or system-proposed spatial site with explicit role."""
+
+    site_id: str = ""
+    lat: float
+    lon: float
+    role: SiteRole = SiteRole.PROPOSED_STOP
+    label: str = ""
+    capacity_per_hour: Optional[int] = None
+
+
+class CorridorLineInput(BaseModel):
+    """Optional user-drawn corridor or transit line (GeoJSON LineString coords [[lon, lat], ...])."""
+
+    corridor_id: str = ""
+    label: str = ""
+    coordinates: List[List[float]] = Field(default_factory=list)
+
+
 class ProvenancedIndicator(BaseModel):
     """Universal evidence indicator carrying full Phase 1.18 Section 14 provenance."""
 
@@ -222,12 +251,14 @@ class CensusQueryResult(BaseModel):
 # ---------------------------------------------------------------------------
 
 class TerritorialSelectionInput(BaseModel):
-    """User selection: point, polygon GeoJSON, administrative query, travel time & sector."""
+    """User selection: point, polygon GeoJSON, multi-site markers, corridors, travel time & sector."""
 
     query: Optional[str] = None
     lat: Optional[float] = None
     lon: Optional[float] = None
     polygon_geojson: Optional[Dict[str, Any]] = None
+    sites: List[SiteMarker] = Field(default_factory=list)
+    corridors: List[CorridorLineInput] = Field(default_factory=list)
     travel_time_minutes: float = Field(default=15.0, ge=1.0, le=120.0)
     custom_travel_times_minutes: List[float] = Field(default_factory=lambda: [5.0, 10.0, 15.0, 20.0])
     transport_mode: Literal["walk", "drive", "mixed"] = "walk"
@@ -235,6 +266,7 @@ class TerritorialSelectionInput(BaseModel):
     max_expansion_minutes: float = Field(default=30.0, ge=5.0, le=180.0)
     max_expansion_km: float = Field(default=8.0, ge=0.5, le=50.0)
     allow_online_osm: bool = False
+    allow_online_fallback: bool = False
     seed: int = 42
 
 
@@ -295,6 +327,7 @@ class DiscoveredTerritorialContext(BaseModel):
     cache_hit: bool = False
     offline_mode: bool = True
     missing_geographic_info: List[str] = Field(default_factory=list)
+    enrichment_summary: Dict[str, Any] = Field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -554,4 +587,87 @@ class TerritorialPreparationResult(BaseModel):
     mobility_accessibility: MobilityAccessibilityReport
     provenanced_indicators: List[ProvenancedIndicator] = Field(default_factory=list)
     provenance_integrity: Dict[str, Any] = Field(default_factory=dict)
+    enrichment_summary: Dict[str, Any] = Field(default_factory=dict)
+    elapsed_ms: float = 0.0
+
+
+# ---------------------------------------------------------------------------
+# Phase 1.19: Multi-Site Congestion, Transit Stops & Decongestion Models
+# ---------------------------------------------------------------------------
+
+class RoadSegmentLoad(BaseModel):
+    """Estimated synthetic traffic load & BPR delay on an OSM road edge."""
+
+    edge_id: str
+    road_name: str
+    road_class: str
+    coordinates: List[List[float]]  # [[lon1, lat1], [lon2, lat2]]
+    length_m: float
+    theoretical_capacity_veh_hr: int
+    estimated_volume_veh_hr: float
+    vc_ratio: float
+    free_flow_speed_kmh: float
+    congested_speed_kmh: float
+    delay_factor: float
+    is_bottleneck: bool = False
+
+
+class CongestionAnalysisResult(BaseModel):
+    """Road network congestion assessment grounded in OSM geometry & synthetic OD flows."""
+
+    observed_traffic_counts_available: bool = False
+    observed_traffic_note: str = (
+        "Sin aforos vehiculares ni sensores en tiempo real; capacidades viales y volúmenes son modelados (HYPOTHESIS / SYNTHETIC_CALIBRATED)."
+    )
+    edges_analyzed: int = 0
+    bottleneck_edges_count: int = 0
+    mean_vc_ratio: float = 0.0
+    max_vc_ratio: float = 0.0
+    mean_delay_factor: float = 1.0
+    segments: List[RoadSegmentLoad] = Field(default_factory=list)
+    hotspots: List[Dict[str, Any]] = Field(default_factory=list)
+    provenanced_indicators: List[ProvenancedIndicator] = Field(default_factory=list)
+
+
+class TransitStopCandidate(BaseModel):
+    """Existing, user-placed, or algorithmically proposed transit stop."""
+
+    stop_id: str
+    name: str
+    lat: float
+    lon: float
+    origin_kind: Literal["EXISTING_OSM", "USER_PLACED", "SYSTEM_PROPOSED"]
+    road_class: str = "secondary"
+    covered_households: int = 0
+    covered_population: int = 0
+    relieved_bottlenecks_count: int = 0
+    spacing_verified: bool = True
+    evidence_type: EvidenceClassification = EvidenceClassification.HYPOTHESIS
+
+
+class TransitSimulationResult(BaseModel):
+    """Before-vs-After transit & decongestion simulation with ledger conservation."""
+
+    simulation_id: str
+    district_id: str
+    district_name: str
+    mode: Literal["manual_sites", "auto_optimize_stops", "hybrid"]
+    user_sites_count: int = 0
+    existing_osm_stops_count: int = 0
+    proposed_stops: List[TransitStopCandidate] = Field(default_factory=list)
+    baseline_congestion: CongestionAnalysisResult
+    post_intervention_congestion: CongestionAnalysisResult
+    baseline_mean_walk_to_stop_min: Optional[float] = None
+    post_mean_walk_to_stop_min: Optional[float] = None
+    walk_time_reduction_pct: float = 0.0
+    estimated_modal_shift_to_transit_share: float = 0.0
+    bottleneck_reduction_pct: float = 0.0
+    mean_vc_reduction_pct: float = 0.0
+    corridor_routes_geojson: Dict[str, Any] = Field(default_factory=dict)
+    congestion_geojson: Dict[str, Any] = Field(default_factory=dict)
+    stops_geojson: Dict[str, Any] = Field(default_factory=dict)
+    ledger_conservation: Dict[str, Any] = Field(default_factory=dict)
+    provenanced_indicators: List[ProvenancedIndicator] = Field(default_factory=list)
+    provenance_integrity: Dict[str, Any] = Field(default_factory=dict)
+    limitations: List[str] = Field(default_factory=list)
     elapsed_ms: float = 0.0

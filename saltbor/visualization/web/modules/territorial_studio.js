@@ -64,6 +64,9 @@ export class TerritorialSimulationStudio {
         this.activePolygonGeoJSON = null;
         this.lastDiscovery = null;
         this.maxExpansionMinutes = 30;
+        this.isAddingSites = false;
+        this.markedSites = [];
+        this.lastTransitResult = null;
 
         this.bindElements();
         if (this.shell && window.innerWidth <= 1024) {
@@ -117,6 +120,12 @@ export class TerritorialSimulationStudio {
         this.btnDiscoverTerritory = document.getElementById("studio-btn-discover-territory");
         this.btnExpandArea = document.getElementById("studio-btn-expand-area");
         this.explorerInspector = document.getElementById("studio-explorer-inspector");
+        this.siteRoleSelect = document.getElementById("studio-site-role-select");
+        this.btnAddSite = document.getElementById("studio-btn-add-site");
+        this.btnClearSites = document.getElementById("studio-btn-clear-sites");
+        this.sitesCountLabel = document.getElementById("studio-sites-count");
+        this.btnSimTransit = document.getElementById("studio-btn-sim-transit");
+        this.chkOnlineFallback = document.getElementById("studio-chk-online-fallback");
 
         // Settings modal
         this.settingsModal = document.getElementById("studio-settings-modal");
@@ -216,6 +225,9 @@ export class TerritorialSimulationStudio {
         document.querySelectorAll("[data-studio-layer]").forEach((chk) => {
             chk.addEventListener("change", () => this.applyDiscoveryLayerVisibility());
         });
+        this.btnAddSite?.addEventListener("click", () => this.toggleMultiSiteMode());
+        this.btnClearSites?.addEventListener("click", () => this.clearMarkedSites());
+        this.btnSimTransit?.addEventListener("click", () => this.runTransitAndCongestionSimulation());
 
         document.getElementById("btn-return-to-studio")?.addEventListener("click", () => {
             this.restoreWorldMapContainer();
@@ -299,6 +311,9 @@ export class TerritorialSimulationStudio {
         this.activePolygonGeoJSON = null;
         this.lastDiscovery = null;
         this.maxExpansionMinutes = 30;
+        this.isAddingSites = false;
+        this.markedSites = [];
+        this.lastTransitResult = null;
         if (this.btnClearPoint) this.btnClearPoint.style.display = "none";
         if (this.btnExportReport) this.btnExportReport.style.display = "none";
         this.updateContextPill();
@@ -1179,6 +1194,24 @@ export class TerritorialSimulationStudio {
                 return;
             }
 
+            if (this.isAddingSites) {
+                const role = this.siteRoleSelect?.value || "proposed_stop";
+                this.markedSites.push({
+                    site_id: `SITE_${this.markedSites.length + 1}`,
+                    lat,
+                    lon,
+                    role,
+                    label: `${role} #${this.markedSites.length + 1}`,
+                });
+                if (this.sitesCountLabel) this.sitesCountLabel.textContent = String(this.markedSites.length);
+                if (this.btnClearSites) this.btnClearSites.style.display = "inline-flex";
+                this.renderMarkedSitesOnMap(map);
+                if (this.mapCoordsLabel) {
+                    this.mapCoordsLabel.textContent = `Sitio #${this.markedSites.length} (${role}) añadido en (${lat}, ${lon}).`;
+                }
+                return;
+            }
+
             if (!this.isPickingMapPoint) return;
             this.activeCoordinates = { lat, lon };
             this.isPickingMapPoint = false;
@@ -1278,13 +1311,15 @@ export class TerritorialSimulationStudio {
 
     async runTerritorialDiscovery() {
         const payload = {
-            location_query: !this.activePolygonGeoJSON && !this.activeCoordinates ? (this.activeContext?.district_name || this.locationSearch?.value || "Santa Tecla") : null,
-            lat: !this.activePolygonGeoJSON && this.activeCoordinates ? this.activeCoordinates.lat : null,
-            lon: !this.activePolygonGeoJSON && this.activeCoordinates ? this.activeCoordinates.lon : null,
+            location_query: !this.activePolygonGeoJSON && !this.activeCoordinates && !this.markedSites.length ? (this.activeContext?.district_name || this.locationSearch?.value || "Santa Tecla") : null,
+            lat: !this.activePolygonGeoJSON && !this.markedSites.length && this.activeCoordinates ? this.activeCoordinates.lat : null,
+            lon: !this.activePolygonGeoJSON && !this.markedSites.length && this.activeCoordinates ? this.activeCoordinates.lon : null,
             polygon_geojson: this.activePolygonGeoJSON,
+            sites: this.markedSites,
             travel_time_minutes: this.getSelectedTravelTimeMinutes(),
             sector: this.sectorSelect?.value || "general",
             max_expansion_minutes: this.maxExpansionMinutes || 30,
+            allow_online_fallback: Boolean(this.chkOnlineFallback?.checked),
         };
         try {
             if (this.mapCoordsLabel) this.mapCoordsLabel.textContent = "Ejecutando descubrimiento censal y territorial (3 escalas)...";
@@ -1419,6 +1454,8 @@ export class TerritorialSimulationStudio {
             population: ["studio-118-pop"],
             infrastructure: ["studio-118-infra-points"],
             barriers: ["studio-118-barriers-points"],
+            congestion: ["studio-119-congestion-lines"],
+            transit: ["studio-119-stops-points", "studio-119-route-lines"],
         };
         document.querySelectorAll("[data-studio-layer]").forEach((chk) => {
             const ids = toggleMap[chk.getAttribute("data-studio-layer")] || [];
@@ -1429,11 +1466,174 @@ export class TerritorialSimulationStudio {
         });
     }
 
+    toggleMultiSiteMode() {
+        if (this.mapMode === "hidden") this.setMapMode("side");
+        this.isAddingSites = !this.isAddingSites;
+        this.isDrawingPolygon = false;
+        this.isPickingMapPoint = false;
+        this.btnAddSite?.classList.toggle("btn-primary", this.isAddingSites);
+        this.btnAddSite?.classList.toggle("btn-secondary", !this.isAddingSites);
+        if (this.mapCoordsLabel && this.isAddingSites) {
+            this.mapCoordsLabel.textContent = "Haz clic en el mapa para añadir 2, 3 o más sitios según el rol seleccionado.";
+        }
+    }
+
+    clearMarkedSites() {
+        this.markedSites = [];
+        this.isAddingSites = false;
+        this.btnAddSite?.classList.remove("btn-primary");
+        this.btnAddSite?.classList.add("btn-secondary");
+        if (this.sitesCountLabel) this.sitesCountLabel.textContent = "0";
+        if (this.btnClearSites) this.btnClearSites.style.display = "none";
+        const map = window.saltborState?.gisMap;
+        if (map && map.getSource("studio-119-user-sites")) {
+            map.getSource("studio-119-user-sites").setData({ type: "FeatureCollection", features: [] });
+        }
+    }
+
+    renderMarkedSitesOnMap(map) {
+        const fc = {
+            type: "FeatureCollection",
+            features: this.markedSites.map((s) => ({
+                type: "Feature",
+                geometry: { type: "Point", coordinates: [s.lon, s.lat] },
+                properties: { role: s.role, label: s.label },
+            })),
+        };
+        if (map.getSource("studio-119-user-sites")) {
+            map.getSource("studio-119-user-sites").setData(fc);
+        } else if (map.isStyleLoaded() || map.getStyle()) {
+            map.addSource("studio-119-user-sites", { type: "geojson", data: fc });
+            map.addLayer({
+                id: "studio-119-user-sites-pts",
+                type: "circle",
+                source: "studio-119-user-sites",
+                paint: {
+                    "circle-radius": 7,
+                    "circle-color": [
+                        "match", ["get", "role"],
+                        "origin", "#22c55e",
+                        "destination", "#ef4444",
+                        "proposed_stop", "#0ea5e9",
+                        "congestion_hotspot", "#f97316",
+                        "#eab308",
+                    ],
+                    "circle-stroke-width": 2,
+                    "circle-stroke-color": "#ffffff",
+                },
+            });
+        }
+    }
+
+    async runTransitAndCongestionSimulation() {
+        const payload = {
+            location_query: !this.activePolygonGeoJSON && !this.activeCoordinates && !this.markedSites.length ? (this.activeContext?.district_name || this.locationSearch?.value || "Santa Tecla") : null,
+            lat: !this.activePolygonGeoJSON && !this.markedSites.length && this.activeCoordinates ? this.activeCoordinates.lat : null,
+            lon: !this.activePolygonGeoJSON && !this.markedSites.length && this.activeCoordinates ? this.activeCoordinates.lon : null,
+            polygon_geojson: this.activePolygonGeoJSON,
+            sites: this.markedSites,
+            mode: "hybrid",
+            k_auto_stops: 3,
+            travel_time_minutes: this.getSelectedTravelTimeMinutes(),
+        };
+        try {
+            if (this.mapCoordsLabel) this.mapCoordsLabel.textContent = "Simulando tráfico V/C, rutas y paradas óptimas...";
+            const res = await fetch("/api/territorial/transit/simulate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            this.lastTransitResult = data;
+            this.renderTransitLayersOnMap(data);
+            if (this.explorerInspector) {
+                this.explorerInspector.style.display = "block";
+                this.explorerInspector.innerHTML = `
+                    <div>
+                        <span class="studio-prov-badge studio-prov-unavailable">AFOROS REALES: UNAVAILABLE</span>
+                        <span class="studio-prov-badge studio-prov-estimated">CONGESTIÓN BPR: HYPOTHESIS</span>
+                        <span class="studio-prov-badge studio-prov-synthetic">CONSERVACIÓN: $${data.ledger_conservation?.total_discrepancy_usd ?? 0}</span>
+                    </div>
+                    <div style="margin-top:4px;">
+                        <strong>Paradas propuestas:</strong> ${data.proposed_stops?.length || 0} (existentes OSM: ${data.existing_osm_stops_count}) ·
+                        <strong>Caminata a parada:</strong> ${data.baseline_mean_walk_to_stop_min ?? "N/A"} → ${data.post_mean_walk_to_stop_min ?? "N/A"} min (−${data.walk_time_reduction_pct}%)
+                    </div>
+                    <div>
+                        <strong>Cuellos de botella (V/C≥0.85):</strong> ${data.baseline_congestion?.bottleneck_edges_count} → ${data.post_intervention_congestion?.bottleneck_edges_count} (−${data.bottleneck_reduction_pct}%) ·
+                        <strong>Cambio modal estimado:</strong> ${(data.estimated_modal_shift_to_transit_share * 100).toFixed(1)}%
+                    </div>
+                `;
+            }
+        } catch (err) {
+            if (this.mapCoordsLabel) this.mapCoordsLabel.textContent = `Error en simulación de tránsito: ${err.message}`;
+        }
+    }
+
+    renderTransitLayersOnMap(data) {
+        const map = window.saltborState?.gisMap;
+        if (!map) return;
+        const apply = () => {
+            if (map.getSource("studio-119-congestion")) {
+                map.getSource("studio-119-congestion").setData(data.congestion_geojson);
+            } else {
+                map.addSource("studio-119-congestion", { type: "geojson", data: data.congestion_geojson });
+                map.addLayer({
+                    id: "studio-119-congestion-lines",
+                    type: "line",
+                    source: "studio-119-congestion",
+                    paint: {
+                        "line-width": ["case", ["get", "is_bottleneck"], 4, 2],
+                        "line-color": [
+                            "interpolate", ["linear"], ["get", "vc_ratio"],
+                            0.3, "#22c55e",
+                            0.65, "#f59e0b",
+                            0.9, "#ef4444",
+                        ],
+                    },
+                });
+            }
+            if (map.getSource("studio-119-routes")) {
+                map.getSource("studio-119-routes").setData(data.corridor_routes_geojson);
+            } else {
+                map.addSource("studio-119-routes", { type: "geojson", data: data.corridor_routes_geojson });
+                map.addLayer({
+                    id: "studio-119-route-lines",
+                    type: "line",
+                    source: "studio-119-routes",
+                    paint: { "line-color": "#38bdf8", "line-width": 4, "line-dasharray": [2, 1] },
+                });
+            }
+            if (map.getSource("studio-119-stops")) {
+                map.getSource("studio-119-stops").setData(data.stops_geojson);
+            } else {
+                map.addSource("studio-119-stops", { type: "geojson", data: data.stops_geojson });
+                map.addLayer({
+                    id: "studio-119-stops-points",
+                    type: "circle",
+                    source: "studio-119-stops",
+                    paint: {
+                        "circle-radius": ["match", ["get", "origin_kind"], "EXISTING_OSM", 5, 7],
+                        "circle-color": ["match", ["get", "origin_kind"], "EXISTING_OSM", "#64748b", "USER_PLACED", "#0ea5e9", "#22c55e"],
+                        "circle-stroke-width": 1.5,
+                        "circle-stroke-color": "#ffffff",
+                    },
+                });
+            }
+            this.applyDiscoveryLayerVisibility();
+        };
+        if (map.isStyleLoaded() || map.getStyle()) {
+            try { apply(); } catch (_e) {}
+        }
+    }
+
     renderExplorerInspector(data) {
         if (!this.explorerInspector || !data) return;
         const alloc = data.allocation || {};
         const cert = data.certificate || {};
         const infra = data.infrastructure_summary || {};
+        const enr = data.enrichment_summary || {};
+        const ovpOrigin = enr.overpass?.origin || (enr.nominatim?.origin) || "LOCAL_ONLY";
         const barriers = data.discovery?.expansion?.contextual_area?.barriers_detected || [];
         this.explorerInspector.style.display = "block";
         this.explorerInspector.innerHTML = `
@@ -1441,6 +1641,7 @@ export class TerritorialSimulationStudio {
                 <span class="studio-prov-badge studio-prov-official">CENSO: ${escapeHtml(cert.census_granularity_used)}</span>
                 <span class="studio-prov-badge studio-prov-estimated">ASIGNACIÓN: ±${alloc.uncertainty_pct}%</span>
                 <span class="studio-prov-badge studio-prov-synthetic">CALIBRACIÓN: ${escapeHtml(cert.calibration_status)} (SRMSE=${cert.srmse})</span>
+                <span class="studio-prov-badge studio-prov-observed">DATO: ${escapeHtml(ovpOrigin)} (+${enr.overpass_features_injected || 0} POIs)</span>
             </div>
             <div style="margin-top:4px;">
                 <strong>Área Principal:</strong> ${alloc.target_area_km2} km² · <strong>Población asignada:</strong> ${alloc.allocated_population_target} hab. (${alloc.allocated_households_target} hogares)

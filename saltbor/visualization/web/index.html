@@ -302,6 +302,18 @@
                                     <button id="studio-btn-discover-territory" class="btn btn-sm btn-primary" type="button">🔍 Analizar Área</button>
                                     <button id="studio-btn-expand-area" class="btn btn-sm btn-secondary" type="button" title="Ampliar radio contextual (+10 min)">↗ Ampliar</button>
                                 </div>
+                                <div class="studio-explorer-row">
+                                    <select id="studio-site-role-select" class="studio-input-sm" aria-label="Rol del sitio a marcar">
+                                        <option value="proposed_stop">🚌 Parada Propuesta</option>
+                                        <option value="origin">🟢 Origen</option>
+                                        <option value="destination">🔴 Destino</option>
+                                        <option value="proposed_service">🏫 Servicio Candidato</option>
+                                        <option value="congestion_hotspot">⚠️ Punto de Congestión</option>
+                                    </select>
+                                    <button id="studio-btn-add-site" class="btn btn-sm btn-secondary" type="button" title="Activar clic en mapa para añadir 2, 3 o más sitios">📍+ Marcar Sitios (<span id="studio-sites-count">0</span>)</button>
+                                    <button id="studio-btn-clear-sites" class="btn btn-sm btn-secondary" type="button" style="display:none;">✕ Limpiar Sitios</button>
+                                    <button id="studio-btn-sim-transit" class="btn btn-sm btn-primary" type="button" title="Simular rutas, congestión V/C y paradas óptimas">🚦 Simular Tránsito y Paradas</button>
+                                </div>
                                 <div class="studio-explorer-layers">
                                     <label><input type="checkbox" data-studio-layer="primary" checked> Principal</label>
                                     <label><input type="checkbox" data-studio-layer="influence" checked> Influencia</label>
@@ -309,6 +321,9 @@
                                     <label><input type="checkbox" data-studio-layer="population" checked> Población Sintética</label>
                                     <label><input type="checkbox" data-studio-layer="infrastructure" checked> Servicios/Infra</label>
                                     <label><input type="checkbox" data-studio-layer="barriers" checked> Barreras</label>
+                                    <label><input type="checkbox" data-studio-layer="congestion" checked> Congestión V/C</label>
+                                    <label><input type="checkbox" data-studio-layer="transit" checked> Paradas/Rutas</label>
+                                    <label title="Solo si falta un dato local, consulta Nominatim/Overpass (ODbL-1.0) y lo cachea localmente en SQLite"><input id="studio-chk-online-fallback" type="checkbox"> Respaldo online si falta dato</label>
                                 </div>
                             </div>
                             <div id="studio-map-canvas-host" class="studio-map-canvas-host"></div>

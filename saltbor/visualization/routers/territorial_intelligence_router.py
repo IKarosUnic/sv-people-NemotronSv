@@ -43,11 +43,37 @@ class TerritorialDiscoverRequest(BaseModel):
     lat: Optional[float] = None
     lon: Optional[float] = None
     polygon_geojson: Optional[Dict[str, Any]] = None
+    sites: List[Dict[str, Any]] = Field(default_factory=list)
+    corridors: List[Dict[str, Any]] = Field(default_factory=list)
     travel_time_minutes: float = Field(default=15.0, ge=1.0, le=120.0)
     transport_mode: str = "walk"
     sector: str = "general"
     max_expansion_minutes: float = Field(default=30.0, ge=5.0, le=180.0)
     max_expansion_km: float = Field(default=8.0, ge=0.5, le=50.0)
+    allow_online_fallback: bool = False
+    seed: int = 42
+
+
+class DataSyncRunRequest(BaseModel):
+    source_kind: str
+    local_file: Optional[str] = None
+    source_url: Optional[str] = None
+    allow_online: bool = False
+    force: bool = False
+    version: Optional[str] = None
+
+
+class TransitSimulationRequest(BaseModel):
+    location_query: Optional[str] = None
+    lat: Optional[float] = None
+    lon: Optional[float] = None
+    polygon_geojson: Optional[Dict[str, Any]] = None
+    sites: List[Dict[str, Any]] = Field(default_factory=list)
+    corridors: List[Dict[str, Any]] = Field(default_factory=list)
+    mode: str = "hybrid"  # "manual_sites" | "auto_optimize_stops" | "hybrid"
+    k_auto_stops: int = Field(default=3, ge=0, le=12)
+    min_stop_spacing_m: float = Field(default=250.0, ge=100.0, le=1500.0)
+    travel_time_minutes: float = Field(default=15.0, ge=1.0, le=120.0)
     seed: int = 42
 
 
@@ -396,7 +422,7 @@ def import_census_records_endpoint(req: CensusImportRequest) -> Dict[str, Any]:
 @router.post("/discover")
 def discover_territory_and_prepare_population(req: TerritorialDiscoverRequest) -> Dict[str, Any]:
     """Run full Phase 1.18 discovery, 3-scale expansion, census/SAE, allocation & calibration."""
-    from saltbor.census_intelligence.schemas import TerritorialSelectionInput
+    from saltbor.census_intelligence.schemas import CorridorLineInput, SiteMarker, TerritorialSelectionInput
 
     orch = get_studio_orchestrator()
     pipe = orch.on_demand_engine.preparation_pipeline
@@ -405,11 +431,14 @@ def discover_territory_and_prepare_population(req: TerritorialDiscoverRequest) -
         lat=req.lat,
         lon=req.lon,
         polygon_geojson=req.polygon_geojson,
+        sites=[SiteMarker(**s) for s in req.sites],
+        corridors=[CorridorLineInput(**c) for c in req.corridors],
         travel_time_minutes=req.travel_time_minutes,
         transport_mode=req.transport_mode if req.transport_mode in ("walk", "drive", "mixed") else "walk",
         sector=req.sector,
         max_expansion_minutes=req.max_expansion_minutes,
         max_expansion_km=req.max_expansion_km,
+        allow_online_fallback=req.allow_online_fallback,
         seed=req.seed,
     )
     try:
@@ -532,6 +561,7 @@ def discover_territory_and_prepare_population(req: TerritorialDiscoverRequest) -
         },
         "provenanced_indicators": [i.model_dump(mode="json") for i in prep.provenanced_indicators],
         "provenance_integrity": prep.provenance_integrity,
+        "enrichment_summary": prep.enrichment_summary,
         "areas_geojson": areas_geojson,
         "population_clusters_geojson": {"type": "FeatureCollection", "features": pop_cluster_features},
         "infrastructure_geojson": {"type": "FeatureCollection", "features": infra_features},
@@ -545,3 +575,78 @@ def run_santa_tecla_validation_endpoint(seed: int = 42) -> Dict[str, Any]:
 
     pipe = _engine().preparation_pipeline
     return run_santa_tecla_school_validation(pipeline=pipe, seed=seed)
+
+
+@router.post("/transit/simulate")
+def simulate_multisite_transit_and_congestion(req: TransitSimulationRequest) -> Dict[str, Any]:
+    """Simulate multi-site corridors, road congestion V/C & transit stop placement."""
+    from saltbor.census_intelligence.schemas import CorridorLineInput, SiteMarker, TerritorialSelectionInput
+    from saltbor.census_intelligence.transit_congestion import TransitOptimizationEngine
+
+    pipe = _engine().preparation_pipeline
+    sel = TerritorialSelectionInput(
+        query=req.location_query,
+        lat=req.lat,
+        lon=req.lon,
+        polygon_geojson=req.polygon_geojson,
+        sites=[SiteMarker(**s) for s in req.sites],
+        corridors=[CorridorLineInput(**c) for c in req.corridors],
+        travel_time_minutes=req.travel_time_minutes,
+        transport_mode="drive",
+        sector="road",
+        seed=req.seed,
+    )
+    try:
+        prep = pipe.prepare(sel, max_sample_households=220)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    net = pipe.discovery_engine.expansion_engine._get_network(
+        prep.discovery.center_lat, prep.discovery.center_lon, 2.5
+    )
+    opt = TransitOptimizationEngine(min_stop_spacing_m=req.min_stop_spacing_m)
+    mode_val = req.mode if req.mode in ("manual_sites", "auto_optimize_stops", "hybrid") else "hybrid"
+    res = opt.simulate_and_optimize(
+        prep=prep,
+        net=net,
+        sites=sel.sites,
+        corridors=sel.corridors,
+        mode=mode_val,  # type: ignore[arg-type]
+        k_auto_stops=req.k_auto_stops,
+    )
+    return res.model_dump(mode="json")
+
+
+@router.post("/transit/optimize-stops")
+def optimize_transit_stops_endpoint(req: TransitSimulationRequest) -> Dict[str, Any]:
+    """Automatically propose optimal transit stops to relieve bottlenecks & improve walk access."""
+    req_opt = req.model_copy(update={"mode": "auto_optimize_stops"})
+    return simulate_multisite_transit_and_congestion(req_opt)
+
+
+@router.get("/sync/status")
+def get_territorial_sync_status() -> Dict[str, Any]:
+    """Inspect offline-first dataset freshness, 262-district Censo coverage, and cache stats."""
+    pipe = _engine().preparation_pipeline
+    return pipe.sync_manager.get_sync_status()
+
+
+@router.post("/sync/run")
+def run_territorial_data_sync(req: DataSyncRunRequest) -> Dict[str, Any]:
+    """Explicitly run offline-first ETL sync from local file or allowlisted official URL."""
+    from saltbor.data_sync.security import DomainNotAllowedError
+
+    orch = get_studio_orchestrator()
+    pipe = orch.on_demand_engine.preparation_pipeline
+    try:
+        return pipe.sync_manager.sync_source(
+            source_kind=req.source_kind,
+            local_file=req.local_file,
+            source_url=req.source_url,
+            allow_online=req.allow_online,
+            force=req.force,
+            version=req.version,
+            persistence=orch.persistence,
+        )
+    except (DomainNotAllowedError, ValueError, FileNotFoundError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
